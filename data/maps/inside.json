@@ -1,0 +1,22 @@
+{
+  "name": "inside",
+  "width": 10,
+  "height": 10,
+  "legend": {
+    "W": { "type": "wall", "passable": false },
+    "F": { "type": "floor", "passable": true },
+    "E": { "type": "door", "passable": true, "portal": "outside" }
+  },
+  "layout": [
+    "WWWWWWWWWW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WFFFFFFFFW",
+    "WWWWWEWWWW",
+    "WWWWWWWWWW"
+  ]
+}
