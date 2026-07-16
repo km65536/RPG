@@ -26,8 +26,8 @@
         <div id="ui-overlay">
             <div id="status-bar">
                 <div>HP: <span id="hp-val">100</span>/<span id="hp-max-val">100</span></div>
+                <div>MP: <span id="mp-val">50</span>/<span id="mp-max-val">50</span></div>
                 <div>Lv: <span id="lv-val">1</span></div>
-                <div>Exp: <span id="exp-val">0</span>/<span id="exp-next-val">100</span></div>
                 <div>G: <span id="gold-val">100</span></div>
                 <button id="menu-toggle-btn">メニュー (M)</button>
             </div>
@@ -40,8 +40,35 @@
             <div id="controls-hud">
                 <div>【操作方法】</div>
                 <div>移動: <span id="hud-key-up">W</span> / <span id="hud-key-left">A</span> / <span id="hud-key-down">S</span> / <span id="hud-key-right">D</span></div>
-                <div>決定・会話・調べる: <span id="hud-key-action">E</span></div>
-                <div>メニュー開閉: M または Esc</div>
+                <div>決定・会話: <span id="hud-key-action">E</span></div>
+                <div>メニュー: M または Esc</div>
+            </div>
+
+            <!-- バトルスクリーン -->
+            <div id="battle-screen" class="hidden">
+                <div id="battle-header">
+                    <div id="battle-enemy-name">敵の名前</div>
+                    <div id="battle-enemy-hp-bar"><div id="battle-enemy-hp-fill"></div></div>
+                </div>
+                <div id="battle-graphics">
+                    <canvas id="battle-enemy-canvas" width="128" height="128"></canvas>
+                </div>
+                <div id="battle-message">敵が現れた！</div>
+                <div id="battle-footer">
+                    <div id="battle-player-status">
+                        <div>HP: <span id="b-hp">100</span> / <span id="b-maxhp">100</span></div>
+                        <div>MP: <span id="b-mp">50</span> / <span id="b-maxmp">50</span></div>
+                    </div>
+                    <div id="battle-commands">
+                        <button id="b-cmd-attack" class="b-btn">戦う</button>
+                        <button id="b-cmd-skill" class="b-btn">スキル</button>
+                        <button id="b-cmd-item" class="b-btn">アイテム</button>
+                        <button id="b-cmd-run" class="b-btn">逃げる</button>
+                    </div>
+                    <div id="battle-sub-menu" class="hidden">
+                        <!-- スキルやアイテムのリストがここに動的に生成される -->
+                    </div>
+                </div>
             </div>
 
             <div id="menu-window" class="hidden">
@@ -56,9 +83,12 @@
                         <h3>キャラクター能力</h3>
                         <div>レベル: <span id="stat-lv">1</span></div>
                         <div>経験値: <span id="stat-exp">0</span> / <span id="stat-next-exp">100</span></div>
-                        <div>力 (STR): <span id="stat-str">10</span></div>
-                        <div>俊敏さ (AGI): <span id="stat-agi">10</span></div>
-                        <div>耐久力 (VIT): <span id="stat-vit">10</span></div>
+                        <div style="margin-top: 10px; color: #ff0;">残りSP: <span id="stat-sp">0</span></div>
+                        <div class="stat-row">力 (STR): <span id="stat-str">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('str')">+</button></div>
+                        <div class="stat-row">俊敏 (AGI): <span id="stat-agi">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('agi')">+</button></div>
+                        <div class="stat-row">耐久 (VIT): <span id="stat-vit">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('vit')">+</button></div>
+                        <h4 style="margin-top: 10px;">習得スキル</h4>
+                        <div id="stat-skills-list"></div>
                     </div>
                     <div id="tab-inventory" class="tab-panel hidden">
                         <h3>所持品</h3>
