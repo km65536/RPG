@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Procedural Pixel RPG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="virtual-pad" class="hidden">
+            <div id="dpad">
+                <div id="dpad-up" class="dpad-btn">▲</div>
+                <div id="dpad-left" class="dpad-btn">◀</div>
+                <div id="dpad-right" class="dpad-btn">▶</div>
+                <div id="dpad-down" class="dpad-btn">▼</div>
+            </div>
+            <div id="action-buttons">
+                <div id="btn-a" class="action-btn">A</div>
+                <div id="btn-b" class="action-btn">B</div>
+            </div>
+        </div>
+
+        <div id="ui-overlay">
+            <div id="status-bar">
+                <div>HP: <span id="hp-val">100</span>/<span id="hp-max-val">100</span></div>
+                <div>Lv: <span id="lv-val">1</span></div>
+                <div>Exp: <span id="exp-val">0</span>/<span id="exp-next-val">100</span></div>
+                <div>G: <span id="gold-val">100</span></div>
+                <button id="menu-toggle-btn">メニュー (M)</button>
+            </div>
+
+            <div id="minimap-container">
+                <canvas id="minimap-canvas" width="80" height="80"></canvas>
+                <div id="minimap-label">周辺マップ</div>
+            </div>
+
+            <div id="controls-hud">
+                <div>【操作方法】</div>
+                <div>移動: <span id="hud-key-up">W</span> / <span id="hud-key-left">A</span> / <span id="hud-key-down">S</span> / <span id="hud-key-right">D</span></div>
+                <div>決定・会話・調べる: <span id="hud-key-action">E</span></div>
+                <div>メニュー開閉: M または Esc</div>
+            </div>
+
+            <div id="menu-window" class="hidden">
+                <div class="menu-tabs">
+                    <button class="tab-btn active" data-tab="tab-status">ステータス</button>
+                    <button class="tab-btn" data-tab="tab-inventory">バッグ</button>
+                    <button class="tab-btn" data-tab="tab-quests">クエスト</button>
+                    <button class="tab-btn" data-tab="tab-settings">設定</button>
+                </div>
+                <div class="menu-content">
+                    <div id="tab-status" class="tab-panel">
+                        <h3>キャラクター能力</h3>
+                        <div>レベル: <span id="stat-lv">1</span></div>
+                        <div>経験値: <span id="stat-exp">0</span> / <span id="stat-next-exp">100</span></div>
+                        <div>力 (STR): <span id="stat-str">10</span></div>
+                        <div>俊敏さ (AGI): <span id="stat-agi">10</span></div>
+                        <div>耐久力 (VIT): <span id="stat-vit">10</span></div>
+                    </div>
+                    <div id="tab-inventory" class="tab-panel hidden">
+                        <h3>所持品</h3>
+                        <div id="inventory-list"></div>
+                    </div>
+                    <div id="tab-quests" class="tab-panel hidden">
+                        <h3>クエストログ</h3>
+                        <div id="quest-list"></div>
+                    </div>
+                    <div id="tab-settings" class="tab-panel hidden">
+                        <h3>システム設定</h3>
+                        <div class="setting-item">
+                            <label>操作端末設定:</label>
+                            <button id="toggle-touch-controls">タッチ操作表示切替</button>
+                        </div>
+                        <div class="setting-item">
+                            <label>キーバインド変更 (移動):</label>
+                            <div class="keybind-row">上: <button class="key-binder" data-action="up">W</button></div>
+                            <div class="keybind-row">左: <button class="key-binder" data-action="left">A</button></div>
+                            <div class="keybind-row">下: <button class="key-binder" data-action="down">S</button></div>
+                            <div class="keybind-row">右: <button class="key-binder" data-action="right">D</button></div>
+                            <div class="keybind-row">決定/会話: <button class="key-binder" data-action="action">E</button></div>
+                        </div>
+                        <button id="reset-save-btn" class="danger-btn">セーブデータ初期化</button>
+                    </div>
+                </div>
+                <button id="menu-close-btn">閉じる</button>
+            </div>
+
+            <div id="shop-window" class="hidden">
+                <h3 id="shop-title">商店</h3>
+                <div class="shop-panels">
+                    <div class="shop-buy-panel">
+                        <h4>購入商品</h4>
+                        <div id="shop-buy-list"></div>
+                    </div>
+                    <div class="shop-sell-panel">
+                        <h4>手持ちの売却</h4>
+                        <div id="shop-sell-list"></div>
+                    </div>
+                </div>
+                <button id="shop-close-btn">店を出る</button>
+            </div>
+
+            <div id="dialogue-box" class="hidden">
+                <div id="dialogue-name">NPC名</div>
+                <div id="dialogue-text">話の内容</div>
+                <div id="dialogue-prompt">Next [<span id="dialogue-key-action">E</span>]</div>
+            </div>
+
+            <div id="message-log"></div>
+
+            <div id="debug-panel">
+                <div id="debug-output">Debug System Initialized. Type help for commands.</div>
+                <input type="text" id="debug-input" placeholder="デバッグコマンド入力...">
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
