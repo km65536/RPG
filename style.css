@@ -31,7 +31,6 @@ body, html {
     max-height: 100%;
 }
 
-/* UI オーバーレイ */
 #ui-overlay {
     position: absolute;
     top: 0;
@@ -45,7 +44,6 @@ body, html {
     pointer-events: auto;
 }
 
-/* 簡易ステータスバー */
 #status-bar {
     position: absolute;
     top: 10px;
@@ -71,7 +69,6 @@ body, html {
     cursor: pointer;
 }
 
-/* ミニマップコンテナ */
 #minimap-container {
     position: absolute;
     top: 60px;
@@ -100,10 +97,9 @@ body, html {
     margin-top: 4px;
 }
 
-/* 操作ガイド（HUD） */
 #controls-hud {
     position: absolute;
-    top: 180px; /* ミニマップの下に配置 */
+    top: 180px;
     left: 10px;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid #aaa;
@@ -125,7 +121,6 @@ body, html {
     border-radius: 3px;
 }
 
-/* メニューウィンドウ */
 #menu-window, #shop-window {
     position: absolute;
     top: 50%;
@@ -133,8 +128,8 @@ body, html {
     transform: translate(-50%, -50%);
     width: 90%;
     max-width: 500px;
-    height: 70%;
-    max-height: 400px;
+    height: 75%;
+    max-height: 450px;
     background: rgba(10, 10, 10, 0.95);
     border: 4px double #fff;
     color: #fff;
@@ -192,7 +187,29 @@ body, html {
     cursor: pointer;
 }
 
-/* リスト表示用 */
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.sp-btn {
+    background: #007700;
+    color: #fff;
+    border: 1px solid #0f0;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.sp-btn:disabled {
+    background: #333;
+    border: 1px solid #555;
+    color: #777;
+    cursor: not-allowed;
+}
+
 #inventory-list, #quest-list, #shop-buy-list, #shop-sell-list {
     display: flex;
     flex-direction: column;
@@ -201,7 +218,7 @@ body, html {
     overflow-y: auto;
 }
 
-.item-row, .quest-row {
+.item-row, .quest-row, .skill-row {
     background: #222;
     padding: 8px;
     border: 1px solid #555;
@@ -211,7 +228,6 @@ body, html {
     font-size: 12px;
 }
 
-/* ショップシステム */
 .shop-panels {
     display: flex;
     gap: 10px;
@@ -226,7 +242,128 @@ body, html {
     gap: 5px;
 }
 
-/* 会話ダイアログ */
+/* バトルスクリーン用スタイル */
+#battle-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+    font-family: 'Courier New', Courier, monospace, sans-serif;
+}
+
+#battle-header {
+    text-align: center;
+    padding: 20px;
+}
+
+#battle-enemy-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#battle-enemy-hp-bar {
+    width: 60%;
+    height: 10px;
+    background: #555;
+    margin: 0 auto;
+    border: 1px solid #fff;
+}
+
+#battle-enemy-hp-fill {
+    width: 100%;
+    height: 100%;
+    background: #f00;
+    transition: width 0.3s;
+}
+
+#battle-graphics {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+#battle-enemy-canvas {
+    image-rendering: pixelated;
+    background: transparent;
+    transform: scale(1.5);
+}
+
+#battle-message {
+    background: #111;
+    border: 2px solid #fff;
+    margin: 10px 20px;
+    padding: 15px;
+    font-size: 16px;
+    min-height: 80px;
+}
+
+#battle-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px 20px 20px;
+}
+
+#battle-player-status {
+    display: flex;
+    justify-content: space-around;
+    background: #222;
+    padding: 10px;
+    border: 1px solid #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#battle-commands {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.b-btn {
+    flex: 1;
+    padding: 15px;
+    background: #333;
+    color: #fff;
+    border: 2px solid #fff;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.b-btn:hover {
+    background: #555;
+}
+
+#battle-sub-menu {
+    background: #111;
+    border: 2px solid #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.sub-cmd-btn {
+    padding: 10px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #aaa;
+    text-align: left;
+    cursor: pointer;
+}
+
 #dialogue-box {
     position: absolute;
     bottom: 80px;
@@ -255,7 +392,6 @@ body, html {
     animation: blink 1s infinite;
 }
 
-/* メッセージログ */
 #message-log {
     position: absolute;
     bottom: 15px;
@@ -276,7 +412,6 @@ body, html {
     animation: fadeOut 3s forwards;
 }
 
-/* デバッグコンソール */
 #debug-panel {
     position: absolute;
     top: 60px;
@@ -308,7 +443,6 @@ body, html {
     font-size: 10px;
 }
 
-/* 設定画面のスタイル */
 .setting-item {
     border-bottom: 1px solid #333;
     padding-bottom: 8px;
@@ -333,7 +467,6 @@ body, html {
     background: #c00 !important;
 }
 
-/* バーチャルパッド (スマホ) */
 #virtual-pad {
     position: absolute;
     bottom: 20px;
