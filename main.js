@@ -2,14 +2,20 @@
  * Procedural Pixel RPG - Main Game Script
  */
 
-// --- 1. グローバルゲーム状態・定数 ---
 const TILE_SIZE = 32;
 
 const ITEM_DATABASE = {
     herb: { id: "herb", name: "薬草", cost: 10, sellValue: 5, description: "HPを30回復する" },
     sword: { id: "sword", name: "銅の剣", cost: 50, sellValue: 20, description: "攻撃力が少し上がる" },
     shield: { id: "shield", name: "木の盾", cost: 40, sellValue: 15, description: "耐久力が少し上がる" },
-    potion: { id: "potion", name: "魔導ポーション", cost: 100, sellValue: 40, description: "HPを完全回復する" }
+    potion: { id: "potion", name: "魔導ポーション", cost: 100, sellValue: 40, description: "HPを完全回復する" },
+    ether: { id: "ether", name: "エーテル", cost: 30, sellValue: 15, description: "MPを20回復する" }
+};
+
+const SKILL_DATABASE = {
+    power_slash: { id: "power_slash", name: "パワースラッシュ", mpCost: 5, power: 1.5, type: "attack", description: "威力の高い物理攻撃" },
+    heal: { id: "heal", name: "ヒール", mpCost: 8, power: 50, type: "heal", description: "HPを回復する魔法" },
+    fireball: { id: "fireball", name: "ファイアボール", mpCost: 12, power: 2.0, type: "attack", description: "炎の魔法攻撃" }
 };
 
 const QUEST_DATABASE = {
@@ -17,7 +23,7 @@ const QUEST_DATABASE = {
         id: "intro",
         title: "はじめてのお買い物",
         description: "町のNPC「おばあさん」に話しかけ、薬草を1個入手しよう。",
-        state: "unlocked" // unlocked, active, completed
+        state: "unlocked"
     },
     extermination: {
         id: "extermination",
@@ -37,13 +43,17 @@ let GameState = {
         targetY: 5 * TILE_SIZE,
         level: 1,
         exp: 0,
+        sp: 0,
         maxHp: 100,
         hp: 100,
+        maxMp: 30,
+        mp: 30,
         gold: 100,
         str: 10,
         agi: 10,
         vit: 10,
-        inventory: ["herb"]
+        inventory: ["herb", "ether"],
+        skills: ["power_slash", "heal"]
     },
     quests: JSON.parse(JSON.stringify(QUEST_DATABASE)),
     currentMap: "outside",
@@ -61,10 +71,10 @@ let GameState = {
             action: "KeyE"
         },
         showTouch: false
-    }
+    },
+    isBattling: false
 };
 
-// --- 2. プロシージャル・ドット絵テクスチャ生成エンジン ---
 const TextureEngine = {
     canvasCache: {},
 
@@ -172,7 +182,6 @@ const TextureEngine = {
     }
 };
 
-// --- 3. マップおよびシステム管理 (外部ファイル読み込み) ---
 const MapManager = {
     mapsData: {},
 
@@ -181,7 +190,7 @@ const MapManager = {
             await this.loadMap("outside", "data/maps/outside.json");
             await this.loadMap("inside", "data/maps/inside.json");
         } catch (e) {
-            console.warn("外部マップファイルの読み込みに失敗しました。サーバーが起動していない可能性があります。フォールバックデータを使用します。", e);
+            console.warn("外部マップファイルの読み込みに失敗。フォールバックデータを使用します。");
             this.loadFallbackMaps();
         }
     },
@@ -194,7 +203,6 @@ const MapManager = {
     },
 
     loadFallbackMaps() {
-        // fetchがブロックされた場合のセーフティネット用ハードコードデータ
         const outsideData = {
             width: 30, height: 30,
             legend: {
@@ -327,18 +335,6 @@ const NPCs = [
     }
 ];
 
-// --- 4. 描画・物理・アニメーション ---
-const Canvas = document.getElementById("game-canvas");
-const ctx = Canvas.getContext("2d");
-
-function resizeCanvas() {
-    Canvas.width = Math.min(window.innerWidth, 480);
-    Canvas.height = Math.min(window.innerHeight, 480);
-    ctx.imageSmoothingEnabled = false;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
 const PlayerEntity = {
     direction: "down",
     bobbing: 0,
@@ -346,6 +342,8 @@ const PlayerEntity = {
     lerpSpeed: 0.15,
 
     update() {
+        if (GameState.isBattling) return;
+        
         const p = GameState.player;
         const dx = p.targetX - p.x;
         const dy = p.targetY - p.y;
@@ -361,11 +359,12 @@ const PlayerEntity = {
             p.x = p.targetX;
             p.y = p.targetY;
             this.bobbing = 0;
+            this.checkEncounter();
         }
     },
 
     move(dir) {
-        if (DialogueSystem.isActive) return;
+        if (DialogueSystem.isActive || GameState.isBattling) return;
         
         const p = GameState.player;
         if (p.x !== p.targetX || p.y !== p.targetY) return;
@@ -398,6 +397,14 @@ const PlayerEntity = {
                 }, 150);
             }
         }
+    },
+    
+    checkEncounter() {
+        const p = GameState.player;
+        const targetEnemyIndex = GameState.spawnedEnemies.findIndex(e => Math.abs(e.x - p.x) < 5 && Math.abs(e.y - p.y) < 5);
+        if (targetEnemyIndex !== -1) {
+            BattleSystem.start(targetEnemyIndex);
+        }
     }
 };
 
@@ -416,7 +423,6 @@ function transitionArea(targetMap) {
     SaveSystem.save();
 }
 
-// --- 5. 入力システム & バーチャルパッド ---
 const InputHandler = {
     keysPressed: {},
 
@@ -461,16 +467,19 @@ const InputHandler = {
         if (code === GameState.settings.keys.action) {
             if (DialogueSystem.isActive) {
                 DialogueSystem.next();
-            } else {
+            } else if (!GameState.isBattling) {
                 interact();
             }
         }
         if (code === "KeyM" || code === "Escape") {
-            UIManager.toggleMenu();
+            if (!GameState.isBattling) {
+                UIManager.toggleMenu();
+            }
         }
     },
 
     update() {
+        if (GameState.isBattling) return;
         const k = GameState.settings.keys;
         if (this.keysPressed[k.up]) PlayerEntity.move("up");
         else if (this.keysPressed[k.down]) PlayerEntity.move("down");
@@ -492,16 +501,9 @@ function interact() {
     const targetNPC = NPCs.find(npc => npc.map === GameState.currentMap && npc.x === targetX && npc.y === targetY);
     if (targetNPC) {
         DialogueSystem.start(targetNPC.name, targetNPC.dialogue, targetNPC.onTalk);
-        return;
-    }
-
-    const targetEnemyIndex = GameState.spawnedEnemies.findIndex(e => e.x === targetX && e.y === targetY);
-    if (targetEnemyIndex !== -1) {
-        CombatSystem.attack(targetEnemyIndex);
     }
 }
 
-// --- 6. 会話対話システム ---
 const DialogueSystem = {
     isActive: false,
     name: "",
@@ -541,45 +543,250 @@ const DialogueSystem = {
     }
 };
 
-// --- 7. 戦闘と動的エネミースポーンAI ---
-const CombatSystem = {
-    attack(enemyIndex) {
-        const enemy = GameState.spawnedEnemies[enemyIndex];
-        const damage = Math.max(1, GameState.player.str - enemy.vit);
-        enemy.hp -= damage;
-        addLog(`${enemy.name}に ${damage} ダメージを与えた！`);
+// --- 新規: ターン制バトルシステム ---
+const BattleSystem = {
+    currentEnemyIndex: -1,
+    enemyData: null,
+    isPlayerTurn: true,
 
-        if (enemy.hp <= 0) {
-            addLog(`${enemy.name}を倒した！`);
-            addLog(`経験値を ${enemy.rewardExp} 獲得！`);
-            addLog(`所持金を ${enemy.rewardGold} G 獲得！`);
-            
-            addExp(enemy.rewardExp);
-            GameState.player.gold += enemy.rewardGold;
+    start(enemyIndex) {
+        GameState.isBattling = true;
+        this.currentEnemyIndex = enemyIndex;
+        this.enemyData = JSON.parse(JSON.stringify(GameState.spawnedEnemies[enemyIndex]));
+        this.isPlayerTurn = true;
+        
+        document.getElementById("battle-screen").classList.remove("hidden");
+        document.getElementById("battle-sub-menu").classList.add("hidden");
+        
+        this.updateUI();
+        this.log(`${this.enemyData.name}が現れた！`);
+        this.drawEnemy();
+        
+        document.getElementById("b-cmd-attack").onclick = () => this.playerAttack();
+        document.getElementById("b-cmd-skill").onclick = () => this.showSkills();
+        document.getElementById("b-cmd-item").onclick = () => this.showItems();
+        document.getElementById("b-cmd-run").onclick = () => this.run();
+    },
 
-            if (GameState.quests.extermination.state === "active") {
-                GameState.quests.extermination.currentCount++;
-                addLog(`進捗: ${GameState.quests.extermination.currentCount}/${GameState.quests.extermination.targetCount}`);
-                if (GameState.quests.extermination.currentCount >= GameState.quests.extermination.targetCount) {
-                    GameState.quests.extermination.state = "completed";
-                    addLog("クエスト「水辺の害虫駆除」達成！おばあさんに報告しよう。");
-                }
+    log(msg) {
+        document.getElementById("battle-message").innerHTML = msg;
+    },
+
+    updateUI() {
+        const p = GameState.player;
+        document.getElementById("battle-enemy-name").innerText = this.enemyData.name;
+        const hpPercent = Math.max(0, (this.enemyData.hp / this.enemyData.maxHp) * 100);
+        document.getElementById("battle-enemy-hp-fill").style.width = hpPercent + "%";
+        
+        document.getElementById("b-hp").innerText = p.hp;
+        document.getElementById("b-maxhp").innerText = p.maxHp;
+        document.getElementById("b-mp").innerText = p.mp;
+        document.getElementById("b-maxmp").innerText = p.maxMp;
+        
+        UIManager.updateUI();
+    },
+
+    drawEnemy() {
+        const canvas = document.getElementById("battle-enemy-canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const tex = TextureEngine.canvasCache[this.enemyData.texture];
+        if (tex) {
+            ctx.drawImage(tex, 0, 0, canvas.width, canvas.height);
+        }
+    },
+
+    playerAttack() {
+        if (!this.isPlayerTurn) return;
+        this.isPlayerTurn = false;
+        document.getElementById("battle-sub-menu").classList.add("hidden");
+        
+        const p = GameState.player;
+        const damage = Math.max(1, p.str - this.enemyData.vit);
+        this.enemyData.hp -= damage;
+        this.log(`あなたの攻撃！ ${damage} のダメージを与えた。`);
+        this.updateUI();
+        
+        setTimeout(() => this.checkWinOrEnemyTurn(), 1500);
+    },
+
+    showSkills() {
+        if (!this.isPlayerTurn) return;
+        const sub = document.getElementById("battle-sub-menu");
+        sub.innerHTML = "";
+        
+        GameState.player.skills.forEach(skillId => {
+            const skill = SKILL_DATABASE[skillId];
+            if (skill) {
+                const btn = document.createElement("button");
+                btn.className = "sub-cmd-btn";
+                btn.innerText = `${skill.name} (MP: ${skill.mpCost})`;
+                btn.onclick = () => this.useSkill(skillId);
+                sub.appendChild(btn);
             }
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "sub-cmd-btn";
+        cancelBtn.innerText = "キャンセル";
+        cancelBtn.onclick = () => sub.classList.add("hidden");
+        sub.appendChild(cancelBtn);
+        
+        sub.classList.remove("hidden");
+    },
 
-            GameState.spawnedEnemies.splice(enemyIndex, 1);
+    useSkill(skillId) {
+        const skill = SKILL_DATABASE[skillId];
+        const p = GameState.player;
+        
+        if (p.mp < skill.mpCost) {
+            this.log("MPが足りない！");
+            return;
+        }
+        
+        document.getElementById("battle-sub-menu").classList.add("hidden");
+        this.isPlayerTurn = false;
+        p.mp -= skill.mpCost;
+        
+        if (skill.type === "attack") {
+            const damage = Math.max(1, Math.floor(p.str * skill.power) - this.enemyData.vit);
+            this.enemyData.hp -= damage;
+            this.log(`${skill.name}！ ${damage} のダメージを与えた！`);
+        } else if (skill.type === "heal") {
+            p.hp = Math.min(p.maxHp, p.hp + skill.power);
+            this.log(`${skill.name}！ HPが ${skill.power} 回復した。`);
+        }
+        
+        this.updateUI();
+        setTimeout(() => this.checkWinOrEnemyTurn(), 1500);
+    },
+
+    showItems() {
+        if (!this.isPlayerTurn) return;
+        const sub = document.getElementById("battle-sub-menu");
+        sub.innerHTML = "";
+        
+        const uniqueItems = [...new Set(GameState.player.inventory)];
+        if (uniqueItems.length === 0) {
+            sub.innerHTML = "<div style='padding:10px;'>アイテムを持っていない</div>";
+        }
+        
+        uniqueItems.forEach(itemId => {
+            const item = ITEM_DATABASE[itemId];
+            const count = GameState.player.inventory.filter(id => id === itemId).length;
+            if (item) {
+                const btn = document.createElement("button");
+                btn.className = "sub-cmd-btn";
+                btn.innerText = `${item.name} x${count}`;
+                btn.onclick = () => this.useItem(itemId);
+                sub.appendChild(btn);
+            }
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "sub-cmd-btn";
+        cancelBtn.innerText = "キャンセル";
+        cancelBtn.onclick = () => sub.classList.add("hidden");
+        sub.appendChild(cancelBtn);
+        
+        sub.classList.remove("hidden");
+    },
+
+    useItem(itemId) {
+        document.getElementById("battle-sub-menu").classList.add("hidden");
+        this.isPlayerTurn = false;
+        const p = GameState.player;
+        const idx = p.inventory.indexOf(itemId);
+        p.inventory.splice(idx, 1);
+        
+        if (itemId === "herb") {
+            p.hp = Math.min(p.maxHp, p.hp + 30);
+            this.log("薬草を使った！ HPが30回復した。");
+        } else if (itemId === "potion") {
+            p.hp = p.maxHp;
+            this.log("魔導ポーションを使った！ HPが全快した。");
+        } else if (itemId === "ether") {
+            p.mp = Math.min(p.maxMp, p.mp + 20);
+            this.log("エーテルを使った！ MPが20回復した。");
         } else {
-            const counterDamage = Math.max(1, enemy.str - GameState.player.vit);
-            GameState.player.hp = Math.max(0, GameState.player.hp - counterDamage);
-            addLog(`${enemy.name}から反撃！ ${counterDamage} ダメージを受けた。`);
+            this.log(`${ITEM_DATABASE[itemId].name}を使った！ ...しかし何も起こらなかった。`);
+        }
+        
+        this.updateUI();
+        setTimeout(() => this.checkWinOrEnemyTurn(), 1500);
+    },
 
-            if (GameState.player.hp <= 0) {
-                addLog("あなたは力尽きた... 安全な場所で再スタート。");
-                GameState.player.hp = GameState.player.maxHp;
-                GameState.player.x = GameState.player.targetX = 5 * TILE_SIZE;
-                GameState.player.y = GameState.player.targetY = 5 * TILE_SIZE;
-                GameState.currentMap = "outside";
+    run() {
+        if (!this.isPlayerTurn) return;
+        document.getElementById("battle-sub-menu").classList.add("hidden");
+        this.isPlayerTurn = false;
+        
+        if (Math.random() < 0.7) {
+            this.log("無事に逃げ切った！");
+            setTimeout(() => this.endBattle(false), 1000);
+        } else {
+            this.log("逃げられない！");
+            setTimeout(() => this.enemyTurn(), 1500);
+        }
+    },
+
+    checkWinOrEnemyTurn() {
+        if (this.enemyData.hp <= 0) {
+            this.enemyData.hp = 0;
+            this.updateUI();
+            this.log(`${this.enemyData.name}を倒した！`);
+            setTimeout(() => this.processWin(), 1500);
+        } else {
+            this.enemyTurn();
+        }
+    },
+
+    enemyTurn() {
+        const damage = Math.max(1, this.enemyData.str - GameState.player.vit);
+        GameState.player.hp -= damage;
+        this.log(`${this.enemyData.name}の攻撃！ ${damage} のダメージを受けた。`);
+        this.updateUI();
+        
+        if (GameState.player.hp <= 0) {
+            setTimeout(() => {
+                this.log("あなたは力尽きた...");
+                setTimeout(() => {
+                    GameState.player.hp = GameState.player.maxHp;
+                    GameState.player.mp = GameState.player.maxMp;
+                    GameState.player.x = GameState.player.targetX = 5 * TILE_SIZE;
+                    GameState.player.y = GameState.player.targetY = 5 * TILE_SIZE;
+                    GameState.currentMap = "outside";
+                    this.endBattle(false);
+                }, 2000);
+            }, 1500);
+        } else {
+            setTimeout(() => {
+                this.log("あなたの番だ！");
+                this.isPlayerTurn = true;
+            }, 1000);
+        }
+    },
+
+    processWin() {
+        addExp(this.enemyData.rewardExp);
+        GameState.player.gold += this.enemyData.rewardGold;
+        this.log(`経験値を ${this.enemyData.rewardExp}、お金を ${this.enemyData.rewardGold}G 獲得した！`);
+        
+        if (GameState.quests.extermination.state === "active") {
+            GameState.quests.extermination.currentCount++;
+            if (GameState.quests.extermination.currentCount >= GameState.quests.extermination.targetCount) {
+                GameState.quests.extermination.state = "completed";
+                addLog("クエスト「水辺の害虫駆除」達成！");
             }
         }
+        
+        setTimeout(() => this.endBattle(true), 2000);
+    },
+
+    endBattle(isWin) {
+        if (isWin) {
+            GameState.spawnedEnemies.splice(this.currentEnemyIndex, 1);
+        }
+        GameState.isBattling = false;
+        document.getElementById("battle-screen").classList.add("hidden");
         SaveSystem.save();
         UIManager.updateUI();
     }
@@ -590,7 +797,7 @@ const EnemySpawner = {
     spawnInterval: 5000,
 
     update(timestamp) {
-        if (GameState.currentMap !== "outside") return;
+        if (GameState.currentMap !== "outside" || GameState.isBattling) return;
 
         if (!this.lastSpawnTime) this.lastSpawnTime = timestamp;
         if (timestamp - this.lastSpawnTime > this.spawnInterval) {
@@ -626,7 +833,6 @@ const EnemySpawner = {
                     rewardGold: 15,
                     texture: "enemy_slime"
                 });
-                addLog("スライムが現れた！");
                 break;
             }
             attempts++;
@@ -645,18 +851,17 @@ function addExp(amount) {
     while (p.exp >= nextExp) {
         p.exp -= nextExp;
         p.level++;
-        p.maxHp += 20;
+        p.maxHp += 15;
         p.hp = p.maxHp;
-        p.str += 3;
-        p.agi += 2;
-        p.vit += 3;
-        addLog(`レベルアップ！ レベル ${p.level} に到達した！`);
+        p.maxMp += 10;
+        p.mp = p.maxMp;
+        p.sp += 5; // レベルアップでSP獲得
+        addLog(`レベルアップ！ レベル ${p.level} に到達！ 5 SPを獲得した！`);
         nextExp = p.level * 100;
     }
     UIManager.updateUI();
 }
 
-// --- 8. 売買・商店システム ---
 const ShopSystem = {
     isOpen: false,
 
@@ -731,7 +936,6 @@ const ShopSystem = {
 };
 window.ShopSystem = ShopSystem;
 
-// --- 9. 永続セーブシステム ---
 const SaveSystem = {
     saveKey: "procedural_rpg_save_v1",
 
@@ -745,8 +949,16 @@ const SaveSystem = {
             try {
                 const parsed = JSON.parse(data);
                 GameState = { ...GameState, ...parsed };
+                // 互換性チェック(新規追加プロパティの補完)
+                if (GameState.player.sp === undefined) GameState.player.sp = 0;
+                if (GameState.player.mp === undefined) {
+                    GameState.player.maxMp = 30;
+                    GameState.player.mp = 30;
+                    GameState.player.skills = ["power_slash", "heal"];
+                }
                 GameState.player.targetX = GameState.player.x;
                 GameState.player.targetY = GameState.player.y;
+                GameState.isBattling = false;
                 addLog("セーブデータをロードしました。");
             } catch (e) {
                 addLog("セーブデータの破損を検知しました。再作成します。");
@@ -763,7 +975,6 @@ const SaveSystem = {
     }
 };
 
-// --- 10. ユーザーインターフェース (UI) マネージャー ---
 const UIManager = {
     init() {
         document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -846,11 +1057,22 @@ const UIManager = {
         document.getElementById("dialogue-key-action").innerText = formatKey(GameState.settings.keys.action);
     },
 
+    allocateSP(stat) {
+        if (GameState.player.sp > 0) {
+            GameState.player.sp--;
+            GameState.player[stat]++;
+            this.updateUI();
+            SaveSystem.save();
+        }
+    },
+
     updateUI() {
         const p = GameState.player;
         
         document.getElementById("hp-val").innerText = p.hp;
         document.getElementById("hp-max-val").innerText = p.maxHp;
+        document.getElementById("mp-val").innerText = p.mp;
+        document.getElementById("mp-max-val").innerText = p.maxMp;
         document.getElementById("lv-val").innerText = p.level;
         document.getElementById("exp-val").innerText = p.exp;
         
@@ -860,9 +1082,27 @@ const UIManager = {
 
         document.getElementById("stat-lv").innerText = p.level;
         document.getElementById("stat-exp").innerText = `${p.exp} / ${nextExp}`;
+        
+        document.getElementById("stat-sp").innerText = p.sp;
         document.getElementById("stat-str").innerText = p.str;
         document.getElementById("stat-agi").innerText = p.agi;
         document.getElementById("stat-vit").innerText = p.vit;
+
+        document.querySelectorAll(".sp-btn").forEach(btn => {
+            btn.disabled = p.sp <= 0;
+        });
+
+        const skillsListDiv = document.getElementById("stat-skills-list");
+        skillsListDiv.innerHTML = "";
+        p.skills.forEach(skillId => {
+            const skill = SKILL_DATABASE[skillId];
+            if (skill) {
+                const row = document.createElement("div");
+                row.className = "skill-row";
+                row.innerHTML = `<strong>${skill.name}</strong> <span>MP: ${skill.mpCost} / ${skill.description}</span>`;
+                skillsListDiv.appendChild(row);
+            }
+        });
 
         const invList = document.getElementById("inventory-list");
         invList.innerHTML = "";
@@ -916,6 +1156,7 @@ const UIManager = {
         });
     }
 };
+window.UIManager = UIManager;
 
 window.useItem = function(index) {
     const p = GameState.player;
@@ -927,6 +1168,10 @@ window.useItem = function(index) {
     } else if (itemId === "potion") {
         p.hp = p.maxHp;
         addLog("極上の魔導ポーションを使用してHPを全快しました。");
+        p.inventory.splice(index, 1);
+    } else if (itemId === "ether") {
+        p.mp = Math.min(p.maxMp, p.mp + 20);
+        addLog("エーテルを使用してMPを20回復しました。");
         p.inventory.splice(index, 1);
     } else {
         addLog("ここでは使用できません。");
@@ -952,7 +1197,6 @@ function addLog(text) {
     }, 3000);
 }
 
-// --- 11. デバッグコンソール機能 ---
 const DebugConsole = {
     init() {
         const input = document.getElementById("debug-input");
@@ -971,18 +1215,40 @@ const DebugConsole = {
         const args = cmdText.split(" ");
         const baseCmd = args[0].toLowerCase();
         let logText = `> ${cmdText}\n`;
+        const p = GameState.player;
 
         if (baseCmd === "help") {
-            logText += "使用可能: gold [数量], lv [レベル値], warp [outside/inside], npc [granny/merchant]";
+            logText += "使用可能: gold, lv, warp, npc, sp, str, agi, vit, hp, mp, skill [id]";
         } else if (baseCmd === "gold") {
             const val = parseInt(args[1]) || 1000;
-            GameState.player.gold += val;
+            p.gold += val;
             logText += `ゴールドを +${val}G 追加しました。`;
         } else if (baseCmd === "lv") {
             const val = parseInt(args[1]) || 10;
-            GameState.player.level = val;
+            p.level = val;
             logText += `レベルを強制的に ${val} に変更しました。`;
             addExp(0);
+        } else if (baseCmd === "sp") {
+            const val = parseInt(args[1]) || 10;
+            p.sp += val;
+            logText += `SPを +${val} 追加しました。`;
+        } else if (baseCmd === "str" || baseCmd === "agi" || baseCmd === "vit") {
+            const val = parseInt(args[1]) || 10;
+            p[baseCmd] = val;
+            logText += `${baseCmd.toUpperCase()} を ${val} に変更しました。`;
+        } else if (baseCmd === "hp" || baseCmd === "mp") {
+            const val = parseInt(args[1]) || 100;
+            p[baseCmd] = val;
+            p[`max${baseCmd.charAt(0).toUpperCase() + baseCmd.slice(1)}`] = val;
+            logText += `最大${baseCmd.toUpperCase()} を ${val} に変更し全快させました。`;
+        } else if (baseCmd === "skill") {
+            const skillId = args[1];
+            if (SKILL_DATABASE[skillId] && !p.skills.includes(skillId)) {
+                p.skills.push(skillId);
+                logText += `スキル [${skillId}] を強制習得しました。`;
+            } else {
+                logText += "スキルIDが無効か既に習得済みです。";
+            }
         } else if (baseCmd === "warp") {
             const mapId = args[1];
             if (mapId === "outside" || mapId === "inside") {
@@ -995,8 +1261,8 @@ const DebugConsole = {
             const npcId = args[1];
             const targetNPC = NPCs.find(n => n.id === npcId);
             if (targetNPC) {
-                targetNPC.x = GameState.player.x;
-                targetNPC.y = GameState.player.y;
+                targetNPC.x = p.x;
+                targetNPC.y = p.y;
                 logText += `NPC [${npcId}] を現在地に召喚しました。`;
             } else {
                 logText += "NPCが見つかりません。";
@@ -1011,8 +1277,6 @@ const DebugConsole = {
         SaveSystem.save();
     }
 };
-
-// --- 12. ゲームループ & カメラシステム ---
 
 function gameLoop(timestamp) {
     update(timestamp);
@@ -1094,8 +1358,8 @@ function renderMinimap() {
     const grid = MapManager.getCurrentGrid();
     if (grid.length === 0) return;
     
-    const cellSize = 4; // 1タイルあたり4ピクセル
-    const viewTiles = 20; // 20x20タイル分を切り出して表示
+    const cellSize = 4;
+    const viewTiles = 20; 
     
     const playerGridC = Math.floor(GameState.player.x / TILE_SIZE);
     const playerGridR = Math.floor(GameState.player.y / TILE_SIZE);
@@ -1117,24 +1381,21 @@ function renderMinimap() {
                 else if (type === 'door') mCtx.fillStyle = '#bf431b';
                 else mCtx.fillStyle = '#000000';
             } else {
-                // マップ外領域
                 mCtx.fillStyle = '#000000';
             }
             mCtx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
         }
     }
     
-    // プレイヤー現在地（赤い点で表示）
     mCtx.fillStyle = '#ff0000';
     const playerXOnMinimap = Math.floor(viewTiles / 2) * cellSize;
     const playerYOnMinimap = Math.floor(viewTiles / 2) * cellSize;
     mCtx.fillRect(playerXOnMinimap, playerYOnMinimap, cellSize, cellSize);
 }
 
-// --- 13. 初期化エントリーポイント (非同期読み込み対応) ---
 window.addEventListener("DOMContentLoaded", async () => {
     TextureEngine.init();
-    await MapManager.init(); // マップデータ（JSON）の非同期読み込みを待機
+    await MapManager.init();
     SaveSystem.load();
     InputHandler.init();
     UIManager.init();
