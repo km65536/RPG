@@ -14,20 +14,9 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
 
-        <div id="virtual-pad" class="hidden">
-            <div id="dpad">
-                <div id="dpad-up" class="dpad-btn">▲</div>
-                <div id="dpad-left" class="dpad-btn">◀</div>
-                <div id="dpad-right" class="dpad-btn">▶</div>
-                <div id="dpad-down" class="dpad-btn">▼</div>
-            </div>
-            <div id="action-buttons">
-                <div id="btn-a" class="action-btn">A</div>
-                <div id="btn-b" class="action-btn">B</div>
-            </div>
-        </div>
-
         <div id="ui-overlay">
+            <!-- ここから「外側」要素: 常に画面全体の隅に固定 (ゲーム画面のサイズに影響されない) -->
+
             <!-- メニュー開閉ボタン (独立して右上に配置) -->
             <button id="menu-toggle-btn">メニュー (M)</button>
 
@@ -49,138 +38,155 @@
                 <div>メニュー: M または Esc</div>
             </div>
 
-            <div id="battle-screen" class="hidden">
-                <div id="battle-header">
-                    <div id="battle-enemy-name">敵の名前</div>
-                    <div id="battle-enemy-hp-bar"><div id="battle-enemy-hp-fill"></div></div>
-                </div>
-                <div id="battle-graphics">
-                    <canvas id="battle-enemy-canvas" width="128" height="128"></canvas>
-                </div>
-                <div id="battle-message">敵が現れた！</div>
-                <div id="battle-footer">
-                    <div id="battle-player-status">
-                        <div class="player-stat-row">
-                            <span>HP: <span id="b-hp">100</span> / <span id="b-maxhp">100</span></span>
-                            <div class="player-hp-bar"><div id="battle-player-hp-fill"></div></div>
-                        </div>
-                        <div class="player-stat-row">
-                            <span>MP: <span id="b-mp">50</span> / <span id="b-maxmp">50</span></span>
-                            <div class="player-mp-bar"><div id="battle-player-mp-fill"></div></div>
-                        </div>
-                    </div>
-                    <div id="battle-commands">
-                        <button id="b-cmd-attack" class="b-btn">戦う</button>
-                        <button id="b-cmd-skill" class="b-btn">スキル</button>
-                        <button id="b-cmd-item" class="b-btn">アイテム</button>
-                        <button id="b-cmd-run" class="b-btn">逃げる</button>
-                    </div>
-                    <div id="battle-sub-menu" class="hidden">
-                    </div>
-                </div>
-            </div>
-
-            <div id="menu-window" class="hidden">
-                <div class="menu-tabs">
-                    <button class="tab-btn active" data-tab="tab-status">ステータス</button>
-                    <button class="tab-btn" data-tab="tab-inventory">バッグ</button>
-                    <button class="tab-btn" data-tab="tab-quests">クエスト</button>
-                    <button class="tab-btn" data-tab="tab-settings">設定</button>
-                </div>
-                <div class="menu-content">
-                    <div id="tab-status" class="tab-panel">
-                        <h3>キャラクター能力</h3>
-                        <div>レベル: <span id="stat-lv">1</span></div>
-                        <div>経験値: <span id="stat-exp">0</span> / <span id="stat-next-exp">100</span></div>
-                        <!-- SPはスキル強化に用いるように変更 -->
-                        <div style="margin-top: 10px; color: #ff0;">残りSP: <span id="stat-sp">0</span> (スキル強化に使用)</div>
-                        <!-- ステータスはレベル比例のため手動割り振りボタンを削除 -->
-                        <div class="stat-row">最大HP: <span id="stat-hp">100</span></div>
-                        <div class="stat-row">最大MP: <span id="stat-mp">30</span></div>
-                        <div class="stat-row">力 (STR): <span id="stat-str">10</span></div>
-                        <div class="stat-row">俊敏 (AGI): <span id="stat-agi">10</span></div>
-                        <div class="stat-row">耐久 (VIT): <span id="stat-vit">10</span></div>
-                        
-                        <h4 style="margin-top: 10px;">装備</h4>
-                        <div id="equipment-list"></div>
-
-                        <h4 style="margin-top: 10px;">習得スキル</h4>
-                        <div id="stat-skills-list"></div>
-                    </div>
-                    <div id="tab-inventory" class="tab-panel hidden">
-                        <h3>所持品</h3>
-                        <div id="inventory-list"></div>
-                    </div>
-                    <div id="tab-quests" class="tab-panel hidden">
-                        <h3>クエストログ</h3>
-                        <div id="quest-list"></div>
-                    </div>
-                    <div id="tab-settings" class="tab-panel hidden">
-                        <h3>システム設定</h3>
-                        <div class="setting-item">
-                            <label>プレイヤー名:</label>
-                            <div class="name-change-row">
-                                <input type="text" id="player-name-input" maxlength="12" placeholder="名前を入力">
-                                <button id="player-name-save-btn">変更</button>
-                            </div>
-                        </div>
-                        <div class="setting-item">
-                            <label>操作端末設定:</label>
-                            <button id="toggle-touch-controls">タッチ操作表示切替</button>
-                        </div>
-                        <div class="setting-item">
-                            <label>キーバインド変更 (移動):</label>
-                            <div class="keybind-row">上: <button class="key-binder" data-action="up">W</button></div>
-                            <div class="keybind-row">左: <button class="key-binder" data-action="left">A</button></div>
-                            <div class="keybind-row">下: <button class="key-binder" data-action="down">S</button></div>
-                            <div class="keybind-row">右: <button class="key-binder" data-action="right">D</button></div>
-                            <div class="keybind-row">決定/会話: <button class="key-binder" data-action="action">E</button></div>
-                        </div>
-                        <button id="reset-save-btn" class="danger-btn">セーブデータ初期化</button>
-                    </div>
-                </div>
-                <button id="menu-close-btn">閉じる</button>
-            </div>
-
-            <div id="shop-window" class="hidden">
-                <h3 id="shop-title">商店</h3>
-                <div class="shop-panels">
-                    <div class="shop-buy-panel">
-                        <h4>購入商品</h4>
-                        <div id="shop-buy-list"></div>
-                    </div>
-                    <div class="shop-sell-panel">
-                        <h4>手持ちの売却</h4>
-                        <div id="shop-sell-list"></div>
-                    </div>
-                </div>
-                <button id="shop-close-btn">店を出る</button>
-            </div>
-
-            <div id="blacksmith-window" class="hidden">
-                <h3>鍛冶場</h3>
-                <p style="font-size:12px; color:#ccc; margin-bottom:8px;">装備を強化する (最大 +<span id="blacksmith-max-lv">5</span>)</p>
-                <div id="blacksmith-list"></div>
-                <button id="blacksmith-close-btn">工房を出る</button>
-            </div>
-
-            <div id="dialogue-box" class="hidden">
-                <div id="dialogue-name">NPC名</div>
-                <div id="dialogue-text">話の内容</div>
-                <div id="dialogue-prompt">Next [<span id="dialogue-key-action">E</span>]</div>
-            </div>
-
-            <div id="message-log"></div>
-
-            <!-- 3本指スワイプで呼び出される、暗号入力用の隠しフォーム (通常時は非表示) -->
-            <div id="secret-input-box" class="hidden">
-                <label for="secret-input">暗号を入力...</label>
-                <input type="text" id="secret-input" autocomplete="off" autocapitalize="characters">
-            </div>
-
             <div id="debug-panel" class="hidden">
                 <div id="debug-output">Debug Console. Type 'help' for commands.</div>
                 <input type="text" id="debug-input" placeholder="コマンド入力...">
+            </div>
+
+            <!-- ここから「内側」要素: ゲーム画面(canvas)にぴったり重なる領域にまとめる -->
+            <div id="game-inner-overlay">
+                <div id="battle-screen" class="hidden">
+                    <div id="battle-header">
+                        <div id="battle-enemy-name">敵の名前</div>
+                        <div id="battle-enemy-hp-bar"><div id="battle-enemy-hp-fill"></div></div>
+                    </div>
+                    <div id="battle-graphics">
+                        <canvas id="battle-enemy-canvas" width="128" height="128"></canvas>
+                    </div>
+                    <div id="battle-message">敵が現れた！</div>
+                    <div id="battle-footer">
+                        <div id="battle-player-status">
+                            <div class="player-stat-row">
+                                <span>HP: <span id="b-hp">100</span> / <span id="b-maxhp">100</span></span>
+                                <div class="player-hp-bar"><div id="battle-player-hp-fill"></div></div>
+                            </div>
+                            <div class="player-stat-row">
+                                <span>MP: <span id="b-mp">50</span> / <span id="b-maxmp">50</span></span>
+                                <div class="player-mp-bar"><div id="battle-player-mp-fill"></div></div>
+                            </div>
+                        </div>
+                        <div id="battle-commands">
+                            <button id="b-cmd-attack" class="b-btn">戦う</button>
+                            <button id="b-cmd-skill" class="b-btn">スキル</button>
+                            <button id="b-cmd-item" class="b-btn">アイテム</button>
+                            <button id="b-cmd-run" class="b-btn">逃げる</button>
+                        </div>
+                        <div id="battle-sub-menu" class="hidden">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="menu-window" class="hidden">
+                    <div class="menu-tabs">
+                        <button class="tab-btn active" data-tab="tab-status">ステータス</button>
+                        <button class="tab-btn" data-tab="tab-inventory">バッグ</button>
+                        <button class="tab-btn" data-tab="tab-quests">クエスト</button>
+                        <button class="tab-btn" data-tab="tab-settings">設定</button>
+                    </div>
+                    <div class="menu-content">
+                        <div id="tab-status" class="tab-panel">
+                            <h3>キャラクター能力</h3>
+                            <div>レベル: <span id="stat-lv">1</span></div>
+                            <div>経験値: <span id="stat-exp">0</span> / <span id="stat-next-exp">100</span></div>
+                            <!-- SPはスキル強化に用いるように変更 -->
+                            <div style="margin-top: 10px; color: #ff0;">残りSP: <span id="stat-sp">0</span> (スキル強化に使用)</div>
+                            <!-- ステータスはレベル比例のため手動割り振りボタンを削除 -->
+                            <div class="stat-row">最大HP: <span id="stat-hp">100</span></div>
+                            <div class="stat-row">最大MP: <span id="stat-mp">30</span></div>
+                            <div class="stat-row">力 (STR): <span id="stat-str">10</span></div>
+                            <div class="stat-row">俊敏 (AGI): <span id="stat-agi">10</span></div>
+                            <div class="stat-row">耐久 (VIT): <span id="stat-vit">10</span></div>
+                            
+                            <h4 style="margin-top: 10px;">装備</h4>
+                            <div id="equipment-list"></div>
+
+                            <h4 style="margin-top: 10px;">習得スキル</h4>
+                            <div id="stat-skills-list"></div>
+                        </div>
+                        <div id="tab-inventory" class="tab-panel hidden">
+                            <h3>所持品</h3>
+                            <div id="inventory-list"></div>
+                        </div>
+                        <div id="tab-quests" class="tab-panel hidden">
+                            <h3>クエストログ</h3>
+                            <div id="quest-list"></div>
+                        </div>
+                        <div id="tab-settings" class="tab-panel hidden">
+                            <h3>システム設定</h3>
+                            <div class="setting-item">
+                                <label>プレイヤー名:</label>
+                                <div class="name-change-row">
+                                    <input type="text" id="player-name-input" maxlength="12" placeholder="英字のみ (A-Z)" pattern="[A-Za-z]*" autocapitalize="characters" autocomplete="off">
+                                    <button id="player-name-save-btn">変更</button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <label>操作端末設定:</label>
+                                <button id="toggle-touch-controls">タッチ操作表示切替</button>
+                            </div>
+                            <div class="setting-item">
+                                <label>キーバインド変更 (移動):</label>
+                                <div class="keybind-row">上: <button class="key-binder" data-action="up">W</button></div>
+                                <div class="keybind-row">左: <button class="key-binder" data-action="left">A</button></div>
+                                <div class="keybind-row">下: <button class="key-binder" data-action="down">S</button></div>
+                                <div class="keybind-row">右: <button class="key-binder" data-action="right">D</button></div>
+                                <div class="keybind-row">決定/会話: <button class="key-binder" data-action="action">E</button></div>
+                            </div>
+                            <button id="reset-save-btn" class="danger-btn">セーブデータ初期化</button>
+                        </div>
+                    </div>
+                    <button id="menu-close-btn">閉じる</button>
+                </div>
+
+                <div id="shop-window" class="hidden">
+                    <h3 id="shop-title">商店</h3>
+                    <div class="shop-panels">
+                        <div class="shop-buy-panel">
+                            <h4>購入商品</h4>
+                            <div id="shop-buy-list"></div>
+                        </div>
+                        <div class="shop-sell-panel">
+                            <h4>手持ちの売却</h4>
+                            <div id="shop-sell-list"></div>
+                        </div>
+                    </div>
+                    <button id="shop-close-btn">店を出る</button>
+                </div>
+
+                <div id="blacksmith-window" class="hidden">
+                    <h3>鍛冶場</h3>
+                    <p style="font-size:12px; color:#ccc; margin-bottom:8px;">装備を強化する (最大 +<span id="blacksmith-max-lv">5</span>)</p>
+                    <div id="blacksmith-list"></div>
+                    <button id="blacksmith-close-btn">工房を出る</button>
+                </div>
+
+                <div id="dialogue-box" class="hidden">
+                    <div id="dialogue-name">NPC名</div>
+                    <div id="dialogue-text">話の内容</div>
+                    <div id="dialogue-prompt">Next [<span id="dialogue-key-action">E</span>]</div>
+                </div>
+
+                <div id="message-log"></div>
+
+                <!-- 3本指スワイプで呼び出される、暗号入力用の隠しフォーム (通常時は非表示) -->
+                <div id="secret-input-box" class="hidden">
+                    <label for="secret-input">暗号を入力...</label>
+                    <input type="text" id="secret-input" autocomplete="off" autocapitalize="characters">
+                </div>
+            </div>
+
+            <!-- 操作キー (十字キー・A/Bボタン) はここでも「外側」扱い -->
+            <div id="virtual-pad" class="hidden">
+                <div id="dpad">
+                    <div id="dpad-up" class="dpad-btn">▲</div>
+                    <div id="dpad-left" class="dpad-btn">◀</div>
+                    <div id="dpad-right" class="dpad-btn">▶</div>
+                    <div id="dpad-down" class="dpad-btn">▼</div>
+                </div>
+                <div id="action-buttons">
+                    <div id="btn-a" class="action-btn">A</div>
+                    <div id="btn-b" class="action-btn">B</div>
+                </div>
             </div>
         </div>
     </div>
