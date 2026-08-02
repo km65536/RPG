@@ -22,7 +22,7 @@ body, html {
     height: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-end;
 }
 
 #game-canvas {
@@ -650,7 +650,7 @@ body, html {
 
 #virtual-pad {
     position: absolute;
-    bottom: 20px;
+    bottom: max(6px, env(safe-area-inset-bottom));
     left: 0;
     width: 100%;
     display: flex;
@@ -919,7 +919,7 @@ body, html {
     }
 
     #virtual-pad {
-        bottom: 4px;
+        bottom: max(4px, env(safe-area-inset-bottom));
     }
 
     #minimap-canvas {

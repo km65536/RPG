@@ -855,6 +855,25 @@ function applyIphoneLandscapeLock() {
     document.documentElement.classList.toggle("is-iphone", isIphone);
 }
 
+// スマホでの素早い連続タップによる「ズーム」や、それに伴う画面のガクッとしたズレを
+// 完全に抑止する。CSSのtouch-action/user-scalable=noだけでは防ぎきれない端末があるため、
+// JS側でも二重にブロックする。
+function preventDoubleTapZoom() {
+    let lastTouchEnd = 0;
+    document.addEventListener("touchend", (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, { passive: false });
+
+    // iOS Safariのピンチズーム用ジェスチャーイベント (Safari独自) も念のため無効化
+    document.addEventListener("gesturestart", (e) => e.preventDefault());
+    document.addEventListener("gesturechange", (e) => e.preventDefault());
+    document.addEventListener("dblclick", (e) => e.preventDefault());
+}
+
 function isUIBlocking() {
     if (GameState.isBattling || DialogueSystem.isActive) return true;
     const blockingIds = ["menu-window", "shop-window", "blacksmith-window"];
@@ -2529,6 +2548,7 @@ function initSecretInput() {
 
 window.addEventListener("DOMContentLoaded", async () => {
     applyIphoneLandscapeLock();
+    preventDoubleTapZoom();
     resizeCanvas();
     syncGameInnerOverlay();
     initSecretInput();
