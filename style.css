@@ -461,29 +461,34 @@ body, html {
 
 #dialogue-box {
     position: absolute;
-    bottom: 80px;
-    left: 5%;
-    width: 90%;
+    bottom: 10px;
+    left: 8%;
+    width: 84%;
+    max-width: 380px;
+    margin: 0 auto;
+    right: 8%;
     background: rgba(0, 0, 0, 0.9);
-    border: 3px double #fff;
+    border: 2px double #fff;
     color: #fff;
-    padding: 15px;
+    padding: 8px 10px;
     z-index: 15;
-    font-size: 14px;
+    font-size: 11px;
 }
 
 #dialogue-name {
     font-weight: bold;
     border-bottom: 1px solid #555;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
     color: #0ff;
+    font-size: 11px;
 }
 
 #dialogue-prompt {
     text-align: right;
-    font-size: 10px;
+    font-size: 9px;
     color: #888;
-    margin-top: 5px;
+    margin-top: 3px;
     animation: blink 1s infinite;
 }
 
@@ -829,13 +834,13 @@ body, html {
     }
 
     #dialogue-box {
-        bottom: 130px;
-        font-size: 12px;
-        padding: 10px;
+        bottom: 8px;
+        font-size: 10px;
+        padding: 6px 8px;
     }
 
     #message-log {
-        bottom: 130px;
+        bottom: 8px;
     }
 
     #dpad {
