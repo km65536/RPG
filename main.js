@@ -848,6 +848,11 @@ function isTouchDevice() {
     return ("ontouchstart" in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
 }
 
+// タッチ端末かどうかをCSSからも参照できるようにクラスを付与する
+function applyTouchDeviceClass() {
+    document.documentElement.classList.toggle("is-touch", isTouchDevice());
+}
+
 // iPhoneかどうかを判定し、<html>にクラスを付与する。
 // (iOS SafariはFullscreen API/画面回転ロックAPIが使えないため、CSSでの疑似回転で横画面化する)
 function applyIphoneLandscapeLock() {
@@ -1879,6 +1884,10 @@ const UIManager = {
             controlsHud.classList.remove("hidden");
         }
 
+        // ゲーム画面の寄せ位置は「仮想パッドが実際に表示されているか」で決める。
+        // 端末のタッチ対応可否(is-touch)だけで判定すると、タッチ対応PCなどで誤爆するため。
+        document.documentElement.classList.toggle("pad-active", GameState.settings.showTouch);
+
         document.querySelectorAll(".key-binder").forEach(btn => {
             const action = btn.getAttribute("data-action");
             btn.innerText = GameState.settings.keys[action] || "None";
@@ -2548,6 +2557,7 @@ function initSecretInput() {
 
 window.addEventListener("DOMContentLoaded", async () => {
     applyIphoneLandscapeLock();
+    applyTouchDeviceClass();
     preventDoubleTapZoom();
     resizeCanvas();
     syncGameInnerOverlay();

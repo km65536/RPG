@@ -22,6 +22,11 @@ body, html {
     height: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
+}
+
+/* 仮想パッドが実際に表示されている時だけ、ゲーム画面を下端に寄せる */
+html.pad-active #game-container {
     align-items: flex-end;
 }
 
@@ -326,6 +331,9 @@ body, html {
     flex-direction: column;
     justify-content: space-between;
     color: #fff;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 #battle-header {
@@ -359,6 +367,7 @@ body, html {
     justify-content: center;
     align-items: center;
     flex: 1;
+    min-height: 0;
 }
 
 #battle-enemy-canvas {
@@ -916,6 +925,14 @@ body, html {
     .b-btn {
         padding: 8px;
         font-size: 12px;
+    }
+
+    #battle-sub-menu {
+        max-height: 90px;
+    }
+
+    #battle-graphics {
+        flex: 0 1 auto;
     }
 
     #virtual-pad {
