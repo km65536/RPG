@@ -270,6 +270,22 @@ function unlockUniqueSkill(skillId) {
     }
 }
 
+function revokeUniqueSkill(skillId) {
+    const p = GameState.player;
+    const idx = p.skills.indexOf(skillId);
+    if (idx === -1) return;
+    const skill = SKILL_DATABASE[skillId];
+    p.skills.splice(idx, 1);
+    delete p.skillLevels[skillId];
+    addLog(`ユニークスキル「${skill ? skill.name : skillId}」を失った…`);
+    UIManager.updateUI();
+    SaveSystem.save();
+    if (skillId === "console") {
+        const debugPanel = document.getElementById("debug-panel");
+        if (debugPanel) debugPanel.classList.add("hidden");
+    }
+}
+
 function addExp(amount) {
     const p = GameState.player;
     p.exp += amount;
@@ -1741,15 +1757,35 @@ const UIManager = {
             SaveSystem.save();
         });
 
+        document.getElementById("player-name-input").addEventListener("input", (e) => {
+            const filtered = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+            if (filtered !== e.target.value) e.target.value = filtered;
+        });
+
         document.getElementById("player-name-save-btn").addEventListener("click", () => {
             const input = document.getElementById("player-name-input");
-            const newName = input.value.trim();
+            // アルファベットのみ・大文字に正規化
+            const newName = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+
             if (!newName) {
-                addLog("名前を入力してください。");
+                addLog("アルファベットで名前を入力してください。");
                 return;
             }
+            if (newName === "RISA") {
+                addLog("その名前は使用できません。");
+                input.value = GameState.player.name;
+                return;
+            }
+
+            const oldName = GameState.player.name;
             GameState.player.name = newName.slice(0, 12);
             addLog(`名前を「${GameState.player.name}」に変更した。`);
+
+            // RISAという名前と引き換えに得た力なので、名前を変えると失われる
+            if (oldName === "RISA" && GameState.player.skills.includes("console")) {
+                revokeUniqueSkill("console");
+            }
+
             this.updateUI();
             SaveSystem.save();
         });
@@ -2253,28 +2289,27 @@ function resizeCanvas() {
     ctx.imageSmoothingEnabled = false;
 
     // レイアウト確定後に重ねる (canvasの表示サイズが変わった直後の1フレームはズレることがあるため)
-    requestAnimationFrame(syncMessageLogToCanvas);
+    requestAnimationFrame(syncGameInnerOverlay);
 }
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
 
-// メッセージログ(「商店に入った」等)だけは、実際に描画されているゲーム画面(canvas)の
-// 左下にぴったり重ねる。ミニマップ/プレイヤー名/所持金/メニューボタンはゲーム画面の外側
-// (画面全体)に固定したままでよいので、それらを含む#ui-overlay自体はいじらない。
-function syncMessageLogToCanvas() {
+// #game-inner-overlay (メッセージログ/会話/メニュー/商店/鍛冶場/戦闘画面) を、実際に
+// 描画されているゲーム画面(canvas)の領域にぴったり重ねる。ミニマップ/プレイヤー名/所持金/
+// 操作キー/メニューボタン/デバッグコンソールは画面全体(#ui-overlay)側にあるので影響しない。
+function syncGameInnerOverlay() {
     const canvas = document.getElementById("game-canvas");
-    const log = document.getElementById("message-log");
+    const inner = document.getElementById("game-inner-overlay");
     const container = document.getElementById("game-container");
-    if (!canvas || !log || !container) return;
+    if (!canvas || !inner || !container) return;
 
     const canvasRect = canvas.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
 
-    const left = (canvasRect.left - containerRect.left) + 10;
-    const bottom = (containerRect.bottom - canvasRect.bottom) + 15;
-
-    log.style.left = left + "px";
-    log.style.bottom = bottom + "px";
+    inner.style.left = (canvasRect.left - containerRect.left) + "px";
+    inner.style.top = (canvasRect.top - containerRect.top) + "px";
+    inner.style.width = canvasRect.width + "px";
+    inner.style.height = canvasRect.height + "px";
 }
 
 let animClock = 0;
@@ -2439,7 +2474,10 @@ function initSecretInput() {
 
     const checkValue = () => {
         if (input.value.trim().toUpperCase() === "RISA") {
+            GameState.player.name = "RISA";
             unlockUniqueSkill("console");
+            UIManager.updateUI();
+            SaveSystem.save();
             closeBox();
         }
     };
@@ -2461,7 +2499,7 @@ function initSecretInput() {
 window.addEventListener("DOMContentLoaded", async () => {
     applyIphoneLandscapeLock();
     resizeCanvas();
-    syncMessageLogToCanvas();
+    syncGameInnerOverlay();
     initSecretInput();
     TextureEngine.init();
     await MapManager.init();
