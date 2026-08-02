@@ -165,6 +165,12 @@
 
             <div id="message-log"></div>
 
+            <!-- 3本指スワイプで呼び出される、暗号入力用の隠しフォーム (通常時は非表示) -->
+            <div id="secret-input-box" class="hidden">
+                <label for="secret-input">暗号を入力...</label>
+                <input type="text" id="secret-input" autocomplete="off" autocapitalize="characters">
+            </div>
+
             <div id="debug-panel" class="hidden">
                 <div id="debug-output">Debug Console. Type 'help' for commands.</div>
                 <input type="text" id="debug-input" placeholder="コマンド入力...">
