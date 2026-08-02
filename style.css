@@ -565,6 +565,32 @@ body, html {
     padding-bottom: 8px;
 }
 
+.name-change-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.name-change-row input {
+    flex: 1;
+    background: #000;
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 5px 8px;
+    font-size: 12px;
+    outline: none;
+}
+
+.name-change-row button {
+    background: #007700;
+    color: #fff;
+    border: 1px solid #0f0;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+
 .keybind-row {
     display: flex;
     justify-content: space-between;
