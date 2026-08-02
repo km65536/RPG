@@ -188,7 +188,10 @@ body, html {
 .menu-content {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 10px;
+    min-height: 0;
 }
 
 .tab-panel {
@@ -212,7 +215,10 @@ body, html {
 
 #blacksmith-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -247,12 +253,10 @@ body, html {
     cursor: not-allowed;
 }
 
-#inventory-list, #quest-list, #shop-buy-list, #shop-sell-list {
+#inventory-list, #quest-list {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    max-height: 200px;
-    overflow-y: auto;
 }
 
 .item-row, .quest-row, .skill-row, .equip-row {
@@ -290,11 +294,21 @@ body, html {
     display: flex;
     gap: 10px;
     flex: 1;
-    overflow: hidden;
+    min-height: 0;
 }
 
 .shop-buy-panel, .shop-sell-panel {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+#shop-buy-list, #shop-sell-list {
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -316,18 +330,18 @@ body, html {
 
 #battle-header {
     text-align: center;
-    padding: 20px;
+    padding: 10px;
 }
 
 #battle-enemy-name {
-    font-size: 24px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
 #battle-enemy-hp-bar {
     width: 60%;
-    height: 10px;
+    height: 8px;
     background: #555;
     margin: 0 auto;
     border: 1px solid #fff;
@@ -362,35 +376,35 @@ body, html {
 #battle-message {
     background: #111;
     border: 2px solid #fff;
-    margin: 10px 20px;
-    padding: 15px;
-    font-size: 16px;
-    min-height: 80px;
+    margin: 6px 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 50px;
 }
 
 #battle-footer {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0 20px 20px 20px;
+    gap: 6px;
+    padding: 0 12px 12px 12px;
 }
 
 #battle-player-status {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     background: #222;
-    padding: 10px;
+    padding: 6px 8px;
     border: 1px solid #fff;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: bold;
 }
 
 .player-stat-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .player-stat-row span {
@@ -399,7 +413,7 @@ body, html {
 
 .player-hp-bar, .player-mp-bar {
     flex: 1;
-    height: 10px;
+    height: 8px;
     background: #555;
     border: 1px solid #fff;
 }
@@ -421,16 +435,16 @@ body, html {
 #battle-commands {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px;
 }
 
 .b-btn {
     flex: 1;
-    padding: 15px;
+    padding: 10px 4px;
     background: #333;
     color: #fff;
     border: 2px solid #fff;
-    font-size: 16px;
+    font-size: 12px;
     cursor: pointer;
     font-weight: bold;
 }
@@ -444,19 +458,21 @@ body, html {
     border: 2px solid #fff;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 10px;
-    max-height: 150px;
+    gap: 4px;
+    padding: 6px;
+    max-height: 130px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .sub-cmd-btn {
-    padding: 10px;
+    padding: 8px;
     background: #222;
     color: #fff;
     border: 1px solid #aaa;
     text-align: left;
     cursor: pointer;
+    font-size: 12px;
 }
 
 #dialogue-box {
@@ -777,11 +793,14 @@ body, html {
     .shop-panels {
         flex-direction: column;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
         gap: 12px;
     }
 
-    #inventory-list, #quest-list, #shop-buy-list, #shop-sell-list, #blacksmith-list {
-        max-height: none;
+    .shop-buy-panel, .shop-sell-panel {
+        overflow-y: visible;
+        flex: none;
     }
 
     .item-row, .quest-row, .skill-row, .equip-row {
@@ -795,11 +814,11 @@ body, html {
     }
 
     #battle-header {
-        padding: 10px;
+        padding: 6px;
     }
 
     #battle-enemy-name {
-        font-size: 18px;
+        font-size: 14px;
     }
 
     #battle-enemy-canvas {
@@ -812,25 +831,25 @@ body, html {
     }
 
     #battle-message {
-        margin: 6px 10px;
-        padding: 10px;
-        font-size: 13px;
-        min-height: 60px;
+        margin: 4px 8px;
+        padding: 6px 8px;
+        font-size: 11px;
+        min-height: 40px;
     }
 
     #battle-footer {
-        padding: 0 10px 20px 10px;
-        gap: 6px;
+        padding: 0 8px 10px 8px;
+        gap: 4px;
     }
 
     #battle-player-status {
-        padding: 8px;
-        font-size: 13px;
+        padding: 5px 6px;
+        font-size: 11px;
     }
 
     .b-btn {
-        padding: 12px;
-        font-size: 13px;
+        padding: 8px 4px;
+        font-size: 11px;
     }
 
     #dialogue-box {
@@ -880,7 +899,7 @@ body, html {
     #battle-message {
         margin: 4px 10px;
         padding: 6px;
-        font-size: 12px;
+        font-size: 11px;
         min-height: 36px;
     }
 
