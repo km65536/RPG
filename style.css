@@ -46,6 +46,22 @@ body, html {
     pointer-events: auto;
 }
 
+/* ゲーム画面(canvas)にぴったり重なる領域。JSでcanvasの実表示位置・サイズに同期される。
+   メッセージログ/会話/メニュー/商店/鍛冶場/戦闘画面など「ゲームの中の要素」はここに入れる。 */
+#game-inner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+#game-inner-overlay * {
+    pointer-events: auto;
+}
+
 #menu-toggle-btn {
     position: absolute;
     top: 10px;
@@ -579,6 +595,7 @@ body, html {
     padding: 5px 8px;
     font-size: 12px;
     outline: none;
+    text-transform: uppercase;
 }
 
 .name-change-row button {
