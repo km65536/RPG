@@ -2,7 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#111111">
     <title>Procedural Pixel RPG</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -24,17 +28,18 @@
         </div>
 
         <div id="ui-overlay">
-            <div id="status-bar">
-                <div>HP: <span id="hp-val">100</span>/<span id="hp-max-val">100</span></div>
-                <div>MP: <span id="mp-val">50</span>/<span id="mp-max-val">50</span></div>
-                <div>Lv: <span id="lv-val">1</span></div>
-                <div>G: <span id="gold-val">100</span></div>
-                <button id="menu-toggle-btn">メニュー (M)</button>
-            </div>
+            <!-- メニュー開閉ボタン (独立して右上に配置) -->
+            <button id="menu-toggle-btn">メニュー (M)</button>
 
             <div id="minimap-container">
-                <canvas id="minimap-canvas" width="80" height="80"></canvas>
+                <canvas id="minimap-canvas" width="160" height="160"></canvas>
                 <div id="minimap-label">周辺マップ</div>
+            </div>
+
+            <!-- 通常画面用のスッキリしたHUD -->
+            <div id="main-hud">
+                <div id="main-player-name">Player</div>
+                <div>G: <span id="main-gold-val">100</span></div>
             </div>
 
             <div id="controls-hud">
@@ -44,7 +49,6 @@
                 <div>メニュー: M または Esc</div>
             </div>
 
-            <!-- バトルスクリーン -->
             <div id="battle-screen" class="hidden">
                 <div id="battle-header">
                     <div id="battle-enemy-name">敵の名前</div>
@@ -56,8 +60,14 @@
                 <div id="battle-message">敵が現れた！</div>
                 <div id="battle-footer">
                     <div id="battle-player-status">
-                        <div>HP: <span id="b-hp">100</span> / <span id="b-maxhp">100</span></div>
-                        <div>MP: <span id="b-mp">50</span> / <span id="b-maxmp">50</span></div>
+                        <div class="player-stat-row">
+                            <span>HP: <span id="b-hp">100</span> / <span id="b-maxhp">100</span></span>
+                            <div class="player-hp-bar"><div id="battle-player-hp-fill"></div></div>
+                        </div>
+                        <div class="player-stat-row">
+                            <span>MP: <span id="b-mp">50</span> / <span id="b-maxmp">50</span></span>
+                            <div class="player-mp-bar"><div id="battle-player-mp-fill"></div></div>
+                        </div>
                     </div>
                     <div id="battle-commands">
                         <button id="b-cmd-attack" class="b-btn">戦う</button>
@@ -66,7 +76,6 @@
                         <button id="b-cmd-run" class="b-btn">逃げる</button>
                     </div>
                     <div id="battle-sub-menu" class="hidden">
-                        <!-- スキルやアイテムのリストがここに動的に生成される -->
                     </div>
                 </div>
             </div>
@@ -83,10 +92,18 @@
                         <h3>キャラクター能力</h3>
                         <div>レベル: <span id="stat-lv">1</span></div>
                         <div>経験値: <span id="stat-exp">0</span> / <span id="stat-next-exp">100</span></div>
-                        <div style="margin-top: 10px; color: #ff0;">残りSP: <span id="stat-sp">0</span></div>
-                        <div class="stat-row">力 (STR): <span id="stat-str">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('str')">+</button></div>
-                        <div class="stat-row">俊敏 (AGI): <span id="stat-agi">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('agi')">+</button></div>
-                        <div class="stat-row">耐久 (VIT): <span id="stat-vit">10</span> <button class="sp-btn" onclick="UIManager.allocateSP('vit')">+</button></div>
+                        <!-- SPはスキル強化に用いるように変更 -->
+                        <div style="margin-top: 10px; color: #ff0;">残りSP: <span id="stat-sp">0</span> (スキル強化に使用)</div>
+                        <!-- ステータスはレベル比例のため手動割り振りボタンを削除 -->
+                        <div class="stat-row">最大HP: <span id="stat-hp">100</span></div>
+                        <div class="stat-row">最大MP: <span id="stat-mp">30</span></div>
+                        <div class="stat-row">力 (STR): <span id="stat-str">10</span></div>
+                        <div class="stat-row">俊敏 (AGI): <span id="stat-agi">10</span></div>
+                        <div class="stat-row">耐久 (VIT): <span id="stat-vit">10</span></div>
+                        
+                        <h4 style="margin-top: 10px;">装備</h4>
+                        <div id="equipment-list"></div>
+
                         <h4 style="margin-top: 10px;">習得スキル</h4>
                         <div id="stat-skills-list"></div>
                     </div>
@@ -133,6 +150,13 @@
                 <button id="shop-close-btn">店を出る</button>
             </div>
 
+            <div id="blacksmith-window" class="hidden">
+                <h3>鍛冶場</h3>
+                <p style="font-size:12px; color:#ccc; margin-bottom:8px;">装備を強化する (最大 +<span id="blacksmith-max-lv">5</span>)</p>
+                <div id="blacksmith-list"></div>
+                <button id="blacksmith-close-btn">工房を出る</button>
+            </div>
+
             <div id="dialogue-box" class="hidden">
                 <div id="dialogue-name">NPC名</div>
                 <div id="dialogue-text">話の内容</div>
@@ -141,12 +165,22 @@
 
             <div id="message-log"></div>
 
-            <div id="debug-panel">
-                <div id="debug-output">Debug System Initialized. Type help for commands.</div>
-                <input type="text" id="debug-input" placeholder="デバッグコマンド入力...">
+            <div id="debug-panel" class="hidden">
+                <div id="debug-output">Debug Console. Type 'help' for commands.</div>
+                <input type="text" id="debug-input" placeholder="コマンド入力...">
             </div>
         </div>
     </div>
+    <script src="data/constants.js"></script>
+    <script src="data/items.js"></script>
+    <script src="data/skills.js"></script>
+    <script src="data/enemies.js"></script>
+    <script src="data/quests.js"></script>
+    <script src="maps/outside.js"></script>
+    <script src="maps/inside.js"></script>
+    <script src="maps/shop.js"></script>
+    <script src="maps/blacksmith.js"></script>
+    <script src="maps/dungeon.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

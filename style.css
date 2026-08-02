@@ -4,12 +4,14 @@
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
+    touch-action: manipulation;
 }
 
 body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
     background-color: #111;
     font-family: 'Courier New', Courier, monospace, sans-serif;
 }
@@ -44,34 +46,22 @@ body, html {
     pointer-events: auto;
 }
 
-#status-bar {
+#menu-toggle-btn {
     position: absolute;
     top: 10px;
-    left: 10px;
     right: 10px;
-    height: 40px;
-    background: rgba(0, 0, 0, 0.75);
-    border: 2px solid #fff;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    font-size: 14px;
-    z-index: 10;
-}
-
-#menu-toggle-btn {
-    padding: 2px 8px;
+    padding: 6px 12px;
     background: #444;
     color: #fff;
-    border: 1px solid #fff;
+    border: 2px solid #fff;
     cursor: pointer;
+    font-weight: bold;
+    z-index: 10;
 }
 
 #minimap-container {
     position: absolute;
-    top: 60px;
+    top: 10px;
     left: 10px;
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid #aaa;
@@ -87,19 +77,36 @@ body, html {
     background-color: #000;
     image-rendering: pixelated;
     display: block;
-    width: 80px;
-    height: 80px;
+    width: 160px;
+    height: 160px;
 }
 
 #minimap-label {
     color: #fff;
-    font-size: 10px;
+    font-size: 12px;
     margin-top: 4px;
+    font-weight: bold;
+}
+
+#main-hud {
+    position: absolute;
+    top: 205px; /* ミニマップの下 */
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #aaa;
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 9;
+    display: flex;
+    gap: 15px;
 }
 
 #controls-hud {
     position: absolute;
-    top: 180px;
+    top: 255px; /* メインHUDの下 */
     left: 10px;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid #aaa;
@@ -121,7 +128,7 @@ body, html {
     border-radius: 3px;
 }
 
-#menu-window, #shop-window {
+#menu-window, #shop-window, #blacksmith-window {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -178,7 +185,7 @@ body, html {
     display: none !important;
 }
 
-#menu-close-btn, #shop-close-btn {
+#menu-close-btn, #shop-close-btn, #blacksmith-close-btn {
     margin-top: auto;
     padding: 8px;
     background: #800;
@@ -187,20 +194,34 @@ body, html {
     cursor: pointer;
 }
 
-.stat-row {
+#blacksmith-list {
+    flex: 1;
+    overflow-y: auto;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.item-row button:disabled, .equip-row button:disabled {
+    background: #333;
+    color: #777;
+    cursor: not-allowed;
+    border-color: #555;
+}
+
+.stat-row {
     margin-bottom: 5px;
+    color: #ccc;
 }
 
 .sp-btn {
     background: #007700;
     color: #fff;
     border: 1px solid #0f0;
-    padding: 2px 8px;
+    padding: 4px 8px;
     cursor: pointer;
     font-weight: bold;
+    font-size: 10px;
 }
 
 .sp-btn:disabled {
@@ -218,7 +239,7 @@ body, html {
     overflow-y: auto;
 }
 
-.item-row, .quest-row, .skill-row {
+.item-row, .quest-row, .skill-row, .equip-row {
     background: #222;
     padding: 8px;
     border: 1px solid #555;
@@ -226,6 +247,27 @@ body, html {
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+}
+
+#equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.equip-row small {
+    color: #9f9;
+}
+
+.equip-row button {
+    background: #800;
+    color: #fff;
+    border: 1px solid #fff;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 10px;
+    white-space: nowrap;
 }
 
 .shop-panels {
@@ -242,7 +284,6 @@ body, html {
     gap: 5px;
 }
 
-/* バトルスクリーン用スタイル */
 #battle-screen {
     position: absolute;
     top: 0;
@@ -255,7 +296,6 @@ body, html {
     flex-direction: column;
     justify-content: space-between;
     color: #fff;
-    font-family: 'Courier New', Courier, monospace, sans-serif;
 }
 
 #battle-header {
@@ -295,6 +335,12 @@ body, html {
     image-rendering: pixelated;
     background: transparent;
     transform: scale(1.5);
+    animation: enemyFloat 2.4s ease-in-out infinite;
+}
+
+@keyframes enemyFloat {
+    0%, 100% { transform: scale(1.5) translateY(0); }
+    50% { transform: scale(1.5) translateY(-6px); }
 }
 
 #battle-message {
@@ -315,12 +361,45 @@ body, html {
 
 #battle-player-status {
     display: flex;
-    justify-content: space-around;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
     background: #222;
     padding: 10px;
     border: 1px solid #fff;
     font-size: 16px;
     font-weight: bold;
+}
+
+.player-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-stat-row span {
+    white-space: nowrap;
+}
+
+.player-hp-bar, .player-mp-bar {
+    flex: 1;
+    height: 10px;
+    background: #555;
+    border: 1px solid #fff;
+}
+
+#battle-player-hp-fill {
+    width: 100%;
+    height: 100%;
+    background: #2ecc40;
+    transition: width 0.3s;
+}
+
+#battle-player-mp-fill {
+    width: 100%;
+    height: 100%;
+    background: #3b7ecb;
+    transition: width 0.3s;
 }
 
 #battle-commands {
@@ -441,6 +520,8 @@ body, html {
     padding: 5px;
     outline: none;
     font-size: 10px;
+    user-select: auto;
+    -webkit-user-select: auto;
 }
 
 .setting-item {
@@ -537,4 +618,212 @@ body, html {
     0% { opacity: 1; }
     70% { opacity: 1; }
     100% { opacity: 0; }
+}
+
+/* ============================================================
+   スマートフォン向けレイアウト (縦持ち中心、狭い画面向けの調整)
+   ============================================================ */
+@media (max-width: 600px) {
+    #minimap-container {
+        top: 6px;
+        left: 6px;
+        padding: 3px;
+        border-width: 1px;
+    }
+
+    #minimap-canvas {
+        width: 96px;
+        height: 96px;
+    }
+
+    #minimap-label {
+        font-size: 9px;
+        margin-top: 2px;
+    }
+
+    #main-hud {
+        top: 112px;
+        left: 6px;
+        padding: 5px 10px;
+        font-size: 11px;
+        gap: 8px;
+    }
+
+    #controls-hud {
+        top: 148px;
+        left: 6px;
+        padding: 6px;
+        font-size: 10px;
+        line-height: 1.4;
+        max-width: 55vw;
+    }
+
+    #menu-toggle-btn {
+        top: 6px;
+        right: 6px;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    #debug-panel {
+        top: 52px;
+        right: 6px;
+        width: 60vw;
+        max-width: 220px;
+        font-size: 9px;
+    }
+
+    #debug-output {
+        height: 70px;
+    }
+
+    #menu-window, #shop-window, #blacksmith-window {
+        width: 95%;
+        height: 82%;
+        max-height: none;
+        padding: 8px;
+    }
+
+    .tab-btn {
+        padding: 10px 4px;
+        font-size: 10px;
+    }
+
+    .shop-panels {
+        flex-direction: column;
+        overflow-y: auto;
+        gap: 12px;
+    }
+
+    #inventory-list, #quest-list, #shop-buy-list, #shop-sell-list, #blacksmith-list {
+        max-height: none;
+    }
+
+    .item-row, .quest-row, .skill-row, .equip-row {
+        font-size: 11px;
+        padding: 10px 8px;
+    }
+
+    .item-row button, .equip-row button, .sp-btn {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    #battle-header {
+        padding: 10px;
+    }
+
+    #battle-enemy-name {
+        font-size: 18px;
+    }
+
+    #battle-enemy-canvas {
+        transform: scale(1.1);
+    }
+
+    @keyframes enemyFloat {
+        0%, 100% { transform: scale(1.1) translateY(0); }
+        50% { transform: scale(1.1) translateY(-5px); }
+    }
+
+    #battle-message {
+        margin: 6px 10px;
+        padding: 10px;
+        font-size: 13px;
+        min-height: 60px;
+    }
+
+    #battle-footer {
+        padding: 0 10px 20px 10px;
+        gap: 6px;
+    }
+
+    #battle-player-status {
+        padding: 8px;
+        font-size: 13px;
+    }
+
+    .b-btn {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    #dialogue-box {
+        bottom: 130px;
+        font-size: 12px;
+        padding: 10px;
+    }
+
+    #message-log {
+        bottom: 130px;
+    }
+
+    #dpad {
+        width: 100px;
+        height: 100px;
+    }
+
+    .dpad-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+    }
+
+    #dpad-up { left: 33px; }
+    #dpad-left { top: 33px; left: 0; }
+    #dpad-right { top: 33px; left: 66px; }
+    #dpad-down { top: 66px; left: 33px; }
+
+    .action-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 15px;
+    }
+}
+
+/* 横持ち・低い画面 (スマホを横向きにしたときなど) はバトルUIが縦に詰まりやすいので調整 */
+@media (max-height: 420px) {
+    #battle-header {
+        padding: 4px;
+    }
+
+    #battle-enemy-name {
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    #battle-message {
+        margin: 4px 10px;
+        padding: 6px;
+        font-size: 12px;
+        min-height: 36px;
+    }
+
+    #battle-footer {
+        padding: 0 10px 6px 10px;
+        gap: 4px;
+    }
+
+    #battle-player-status {
+        padding: 5px;
+        font-size: 11px;
+    }
+
+    .b-btn {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    #virtual-pad {
+        bottom: 4px;
+    }
+
+    #minimap-canvas {
+        width: 70px;
+        height: 70px;
+    }
+
+    #controls-hud {
+        display: none;
+    }
 }
