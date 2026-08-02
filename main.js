@@ -44,53 +44,60 @@ function createEquipmentInstance(itemId, level = 0) {
     return { itemId, level: Math.max(0, Math.min(MAX_ENHANCE_LEVEL, level)), uid: generateItemUid(itemId) };
 }
 
-let GameState = {
-    player: {
-        name: "Player",
-        x: 5 * TILE_SIZE,
-        y: 5 * TILE_SIZE,
-        targetX: 5 * TILE_SIZE,
-        targetY: 5 * TILE_SIZE,
-        level: 1,
-        exp: 0,
-        sp: 0,
-        maxHp: 100,
-        hp: 100,
-        maxMp: 30,
-        mp: 30,
-        gold: 100,
-        str: 10,
-        agi: 10,
-        vit: 10,
-        // レベルアップのみで決まる「素」のステータス。装備・スキルのボーナスはここには含めない。
-        baseStats: { maxHp: 100, maxMp: 30, str: 10, agi: 10, vit: 10 },
-        // 各スロットに装備中のアイテムインスタンス ({ itemId, level, uid }、未装備は null)
-        equipment: { head: null, body: null, feet: null, neck: null, leftHand: null, rightHand: null },
-        // 所持品: 消費アイテム/スキルブックは文字列ID、装備品はインスタンスオブジェクト
-        inventory: ["herb", "ether"],
-        skills: ["power_slash", "heal"],
-        skillLevels: { power_slash: 1, heal: 1 }
-    },
-    quests: JSON.parse(JSON.stringify(QUEST_DATABASE)),
-    currentMap: "outside",
-    spawnedEnemies: [],
-    npcFavorability: {
-        "granny": 0,
-        "merchant": 0
-    },
-    settings: {
-        keys: {
-            up: "KeyW",
-            left: "KeyA",
-            down: "KeyS",
-            right: "KeyD",
-            action: "KeyE"
+// 新規プレイ時/初期化時の初期状態を毎回まっさらに作る。
+// (直書きのオブジェクトリテラルをそのまま使い回すと、リセット時に前回のプレイでの
+//  参照が残ってしまう可能性があるため、必ず関数から新規オブジェクトとして生成する)
+function createDefaultGameState() {
+    return {
+        player: {
+            name: "Player",
+            x: 5 * TILE_SIZE,
+            y: 5 * TILE_SIZE,
+            targetX: 5 * TILE_SIZE,
+            targetY: 5 * TILE_SIZE,
+            level: 1,
+            exp: 0,
+            sp: 0,
+            maxHp: 100,
+            hp: 100,
+            maxMp: 30,
+            mp: 30,
+            gold: 100,
+            str: 10,
+            agi: 10,
+            vit: 10,
+            // レベルアップのみで決まる「素」のステータス。装備・スキルのボーナスはここには含めない。
+            baseStats: { maxHp: 100, maxMp: 30, str: 10, agi: 10, vit: 10 },
+            // 各スロットに装備中のアイテムインスタンス ({ itemId, level, uid }、未装備は null)
+            equipment: { head: null, body: null, feet: null, neck: null, leftHand: null, rightHand: null },
+            // 所持品: 消費アイテム/スキルブックは文字列ID、装備品はインスタンスオブジェクト
+            inventory: ["herb", "ether"],
+            skills: ["power_slash", "heal"],
+            skillLevels: { power_slash: 1, heal: 1 }
         },
-        showTouch: false
-    },
-    isBattling: false,
-    dungeonBossDefeated: false
-};
+        quests: JSON.parse(JSON.stringify(QUEST_DATABASE)),
+        currentMap: "outside",
+        spawnedEnemies: [],
+        npcFavorability: {
+            "granny": 0,
+            "merchant": 0
+        },
+        settings: {
+            keys: {
+                up: "KeyW",
+                left: "KeyA",
+                down: "KeyS",
+                right: "KeyD",
+                action: "KeyE"
+            },
+            showTouch: false
+        },
+        isBattling: false,
+        dungeonBossDefeated: false
+    };
+}
+
+let GameState = createDefaultGameState();
 
 // 属性相性: 弱点なら1.5倍、耐性なら0.5倍のダメージになる
 function getElementMultiplier(element, enemy) {
@@ -1723,7 +1730,31 @@ const SaveSystem = {
 
     reset() {
         localStorage.removeItem(this.saveKey);
-        window.location.reload();
+
+        // ページを再読み込みせず、その場でまっさらな状態を作り直す
+        // (端末によってはreload()がキャッシュ経由の復元になり、UIが壊れることがあるため)
+        GameState = createDefaultGameState();
+        recalculateStats();
+
+        BattleSystem.currentEnemyIndex = -1;
+        BattleSystem.enemyData = null;
+        BattleSystem.isPlayerTurn = true;
+
+        DialogueSystem.isActive = false;
+        DialogueSystem.lines = [];
+        DialogueSystem.currentIndex = 0;
+        DialogueSystem.callback = null;
+
+        ["menu-window", "shop-window", "blacksmith-window", "battle-screen", "dialogue-box", "secret-input-box"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("hidden");
+        });
+
+        UIManager.applySettingsUI();
+        UIManager.updateUI();
+        addLog("セーブデータを初期化しました。");
+
+        this.save();
     }
 };
 
