@@ -46,6 +46,7 @@ function createEquipmentInstance(itemId, level = 0) {
 
 let GameState = {
     player: {
+        name: "Player",
         x: 5 * TILE_SIZE,
         y: 5 * TILE_SIZE,
         targetX: 5 * TILE_SIZE,
@@ -1669,6 +1670,7 @@ const SaveSystem = {
                 const parsed = JSON.parse(data);
                 GameState = { ...GameState, ...parsed };
                 if (GameState.player.sp === undefined) GameState.player.sp = 0;
+                if (!GameState.player.name) GameState.player.name = "Player";
                 if (!GameState.player.skillLevels) {
                     GameState.player.skillLevels = {};
                     GameState.player.skills.forEach(s => GameState.player.skillLevels[s] = 1);
@@ -1736,6 +1738,19 @@ const UIManager = {
         document.getElementById("toggle-touch-controls").addEventListener("click", () => {
             GameState.settings.showTouch = !GameState.settings.showTouch;
             this.applySettingsUI();
+            SaveSystem.save();
+        });
+
+        document.getElementById("player-name-save-btn").addEventListener("click", () => {
+            const input = document.getElementById("player-name-input");
+            const newName = input.value.trim();
+            if (!newName) {
+                addLog("名前を入力してください。");
+                return;
+            }
+            GameState.player.name = newName.slice(0, 12);
+            addLog(`名前を「${GameState.player.name}」に変更した。`);
+            this.updateUI();
             SaveSystem.save();
         });
 
@@ -1810,6 +1825,14 @@ const UIManager = {
 
     updateUI() {
         const p = GameState.player;
+
+        const nameElem = document.getElementById("main-player-name");
+        if (nameElem) nameElem.innerText = p.name;
+
+        const nameInput = document.getElementById("player-name-input");
+        if (nameInput && document.activeElement !== nameInput) {
+            nameInput.value = p.name;
+        }
         
         const goldValElem = document.getElementById("main-gold-val");
         if (goldValElem) goldValElem.innerText = p.gold;
@@ -2230,27 +2253,28 @@ function resizeCanvas() {
     ctx.imageSmoothingEnabled = false;
 
     // レイアウト確定後に重ねる (canvasの表示サイズが変わった直後の1フレームはズレることがあるため)
-    requestAnimationFrame(syncOverlayToCanvas);
+    requestAnimationFrame(syncMessageLogToCanvas);
 }
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", resizeCanvas);
 
-// ui-overlay (ミニマップ/HUD/メッセージログなど) を、実際に画面に描画されているcanvasの
-// 領域にぴったり重ねる。canvasは中央寄せかつ余白ができることがあるので、
-// コンテナ全体を基準にすると「ゲーム画面」ではなく「スマホの画面」の端に寄ってしまう。
-function syncOverlayToCanvas() {
+// メッセージログ(「商店に入った」等)だけは、実際に描画されているゲーム画面(canvas)の
+// 左下にぴったり重ねる。ミニマップ/プレイヤー名/所持金/メニューボタンはゲーム画面の外側
+// (画面全体)に固定したままでよいので、それらを含む#ui-overlay自体はいじらない。
+function syncMessageLogToCanvas() {
     const canvas = document.getElementById("game-canvas");
-    const overlay = document.getElementById("ui-overlay");
+    const log = document.getElementById("message-log");
     const container = document.getElementById("game-container");
-    if (!canvas || !overlay || !container) return;
+    if (!canvas || !log || !container) return;
 
     const canvasRect = canvas.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
 
-    overlay.style.left = (canvasRect.left - containerRect.left) + "px";
-    overlay.style.top = (canvasRect.top - containerRect.top) + "px";
-    overlay.style.width = canvasRect.width + "px";
-    overlay.style.height = canvasRect.height + "px";
+    const left = (canvasRect.left - containerRect.left) + 10;
+    const bottom = (containerRect.bottom - canvasRect.bottom) + 15;
+
+    log.style.left = left + "px";
+    log.style.bottom = bottom + "px";
 }
 
 let animClock = 0;
@@ -2437,7 +2461,7 @@ function initSecretInput() {
 window.addEventListener("DOMContentLoaded", async () => {
     applyIphoneLandscapeLock();
     resizeCanvas();
-    syncOverlayToCanvas();
+    syncMessageLogToCanvas();
     initSecretInput();
     TextureEngine.init();
     await MapManager.init();
