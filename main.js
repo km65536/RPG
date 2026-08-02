@@ -2016,10 +2016,28 @@ const UIManager = {
 
         const invList = document.getElementById("inventory-list");
         invList.innerHTML = "";
-        p.inventory.forEach((entry, idx) => {
+
+        // 消費アイテム/スキルブック(文字列ID)は同じIDの個数を数えて1行に「×N」でまとめる。
+        // 装備品(オブジェクト)は強化レベルがそれぞれ違うので個別に表示する。
+        const stackCounts = {};
+        p.inventory.forEach(entry => {
+            if (typeof entry === "string") {
+                stackCounts[entry] = (stackCounts[entry] || 0) + 1;
+            }
+        });
+
+        const renderedStacks = new Set();
+
+        p.inventory.forEach((entry) => {
             const itemId = typeof entry === "string" ? entry : entry.itemId;
             const item = ITEM_DATABASE[itemId];
             if (!item) return;
+
+            if (typeof entry === "string") {
+                if (renderedStacks.has(itemId)) return;
+                renderedStacks.add(itemId);
+            }
+
             const row = document.createElement("div");
             row.className = "item-row";
 
@@ -2033,15 +2051,17 @@ const UIManager = {
                     <button onclick="EquipmentSystem.equip('${entry.uid}')">装備</button>
                 `;
             } else if (item.type === "skill_book") {
+                const countTag = stackCounts[itemId] > 1 ? ` ×${stackCounts[itemId]}` : "";
                 const learned = p.skills.includes(item.grantsSkill);
                 row.innerHTML = `
-                    <span><strong>${getItemIcon(item)} ${item.name}</strong> - ${item.description}</span>
-                    <button ${learned ? "disabled" : ""} onclick="learnSkill(${idx})">${learned ? "習得済み" : "習得"}</button>
+                    <span><strong>${getItemIcon(item)} ${item.name}${countTag}</strong> - ${item.description}</span>
+                    <button ${learned ? "disabled" : ""} onclick="learnSkill('${itemId}')">${learned ? "習得済み" : "習得"}</button>
                 `;
             } else {
+                const countTag = stackCounts[itemId] > 1 ? ` ×${stackCounts[itemId]}` : "";
                 row.innerHTML = `
-                    <span><strong>${getItemIcon(item)} ${item.name}</strong> - ${item.description}</span>
-                    <button onclick="useItem(${idx})">使う</button>
+                    <span><strong>${getItemIcon(item)} ${item.name}${countTag}</strong> - ${item.description}</span>
+                    <button onclick="useItem('${itemId}')">使う</button>
                 `;
             }
             invList.appendChild(row);
@@ -2090,12 +2110,12 @@ const UIManager = {
 };
 window.UIManager = UIManager;
 
-window.useItem = function(index) {
+window.useItem = function(itemId) {
     const p = GameState.player;
-    const itemId = p.inventory[index];
+    const index = p.inventory.indexOf(itemId);
     const item = ITEM_DATABASE[itemId];
 
-    if (!item || item.type !== "consumable") {
+    if (index === -1 || !item || item.type !== "consumable") {
         addLog("ここでは使用できません。");
         return;
     }
@@ -2106,13 +2126,12 @@ window.useItem = function(index) {
     SaveSystem.save();
 };
 
-window.learnSkill = function(index) {
+window.learnSkill = function(itemId) {
     const p = GameState.player;
-    const entry = p.inventory[index];
-    const itemId = typeof entry === "string" ? entry : null;
-    const item = itemId ? ITEM_DATABASE[itemId] : null;
+    const index = p.inventory.indexOf(itemId);
+    const item = ITEM_DATABASE[itemId];
 
-    if (!item || item.type !== "skill_book") {
+    if (index === -1 || !item || item.type !== "skill_book") {
         addLog("それは読める本ではありません。");
         return;
     }
@@ -2187,7 +2206,8 @@ const DebugConsole = {
             logText += "                   項目: hp, mp, str, agi, vit, level\n";
             logText += "[項目] clear : 指定した項目を 0 にする (例: hp clear)\n";
             logText += "skill [id] : スキルを強制習得 (例: skill exp_boost)\n";
-            logText += "item [itemId] [強化Lv] : アイテムを入手 (装備品は強化Lvを指定可, 例: item iron_sword 3)\n";
+            logText += "item [itemId] [強化Lv or 個数] : アイテムを入手 (装備品は強化Lv、それ以外は個数を指定可)\n";
+            logText += "                                 例: item iron_sword 3 (装備+3) / item herb 10 (薬草10個)\n";
             logText += "equip [itemId] [強化Lv] : 装備品を強制入手して装備 (例: equip iron_sword 3)\n";
             logText += "unequip [head/body/leftHand/rightHand/neck/feet] : 指定スロットの装備を外す\n";
             logText += "warp [outside/inside/shop/blacksmith/dungeon] : 指定マップへワープ\n";
@@ -2285,8 +2305,12 @@ const DebugConsole = {
                 p.inventory.push(createEquipmentInstance(itemId, level));
                 logText += `${item.name} (+${level}) を入手しました。`;
             } else {
-                p.inventory.push(itemId);
-                logText += `${item.name} を入手しました。`;
+                let count = parseInt(args[2]);
+                if (isNaN(count) || count < 1) count = 1;
+                for (let i = 0; i < count; i++) {
+                    p.inventory.push(itemId);
+                }
+                logText += `${item.name} を ${count}個 入手しました。`;
             }
         } else if (baseCmd === "equip") {
             const itemId = args[1];
