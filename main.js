@@ -824,6 +824,13 @@ function isTouchDevice() {
     return ("ontouchstart" in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
 }
 
+// iPhoneかどうかを判定し、<html>にクラスを付与する。
+// (iOS SafariはFullscreen API/画面回転ロックAPIが使えないため、CSSでの疑似回転で横画面化する)
+function applyIphoneLandscapeLock() {
+    const isIphone = /iPhone/i.test(navigator.userAgent);
+    document.documentElement.classList.toggle("is-iphone", isIphone);
+}
+
 function isUIBlocking() {
     if (GameState.isBattling || DialogueSystem.isActive) return true;
     const blockingIds = ["menu-window", "shop-window", "blacksmith-window"];
@@ -2211,11 +2218,40 @@ const Canvas = document.getElementById("game-canvas");
 const ctx = Canvas.getContext("2d");
 
 function resizeCanvas() {
-    Canvas.width = Math.min(window.innerWidth, 480);
-    Canvas.height = Math.min(window.innerHeight, 480);
+    // iPhoneで疑似回転(強制横画面)が効いている間は、実際のウィンドウの縦横が
+    // 見た目上入れ替わっているので、キャンバスの解像度もそれに合わせて入れ替える。
+    const rotated = document.documentElement.classList.contains("is-iphone") &&
+        window.matchMedia("(orientation: portrait)").matches;
+    const availW = rotated ? window.innerHeight : window.innerWidth;
+    const availH = rotated ? window.innerWidth : window.innerHeight;
+
+    Canvas.width = Math.min(availW, 480);
+    Canvas.height = Math.min(availH, 480);
     ctx.imageSmoothingEnabled = false;
+
+    // レイアウト確定後に重ねる (canvasの表示サイズが変わった直後の1フレームはズレることがあるため)
+    requestAnimationFrame(syncOverlayToCanvas);
 }
 window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", resizeCanvas);
+
+// ui-overlay (ミニマップ/HUD/メッセージログなど) を、実際に画面に描画されているcanvasの
+// 領域にぴったり重ねる。canvasは中央寄せかつ余白ができることがあるので、
+// コンテナ全体を基準にすると「ゲーム画面」ではなく「スマホの画面」の端に寄ってしまう。
+function syncOverlayToCanvas() {
+    const canvas = document.getElementById("game-canvas");
+    const overlay = document.getElementById("ui-overlay");
+    const container = document.getElementById("game-container");
+    if (!canvas || !overlay || !container) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    overlay.style.left = (canvasRect.left - containerRect.left) + "px";
+    overlay.style.top = (canvasRect.top - containerRect.top) + "px";
+    overlay.style.width = canvasRect.width + "px";
+    overlay.style.height = canvasRect.height + "px";
+}
 
 let animClock = 0;
 
@@ -2348,8 +2384,61 @@ function renderMinimap() {
     mCtx.fillRect(playerXOnMinimap, playerYOnMinimap, cellSize, cellSize);
 }
 
+// 3本指タッチで暗号入力欄を呼び出す (キーボードが無いタッチ端末でも「開発者の眼」を入手できるようにする)
+function initSecretInput() {
+    const box = document.getElementById("secret-input-box");
+    const input = document.getElementById("secret-input");
+    if (!box || !input) return;
+
+    let isOpen = false;
+
+    const openBox = () => {
+        if (isOpen) return;
+        isOpen = true;
+        box.classList.remove("hidden");
+        input.value = "";
+        input.focus();
+        addLog("何かの気配を感じ、文字を入力できるようになった…");
+    };
+
+    const closeBox = () => {
+        isOpen = false;
+        box.classList.add("hidden");
+        input.blur();
+    };
+
+    document.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 3) {
+            openBox();
+        }
+    }, { passive: true });
+
+    const checkValue = () => {
+        if (input.value.trim().toUpperCase() === "RISA") {
+            unlockUniqueSkill("console");
+            closeBox();
+        }
+    };
+
+    input.addEventListener("input", checkValue);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            checkValue();
+            closeBox();
+        } else if (e.key === "Escape") {
+            closeBox();
+        }
+    });
+    input.addEventListener("blur", () => {
+        setTimeout(closeBox, 150);
+    });
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
+    applyIphoneLandscapeLock();
     resizeCanvas();
+    syncOverlayToCanvas();
+    initSecretInput();
     TextureEngine.init();
     await MapManager.init();
     SaveSystem.load();
