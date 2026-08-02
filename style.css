@@ -18,8 +18,8 @@ body, html {
 
 #game-container {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -506,6 +506,42 @@ body, html {
     z-index: 30;
 }
 
+#secret-input-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #9b59b6;
+    border-radius: 6px;
+    padding: 14px 18px;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+#secret-input-box label {
+    color: #d9b8f5;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+#secret-input {
+    background: #000;
+    border: 1px solid #9b59b6;
+    color: #d9b8f5;
+    padding: 8px 10px;
+    outline: none;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 4px;
+    user-select: auto;
+    -webkit-user-select: auto;
+    width: 140px;
+}
+
 #debug-output {
     height: 100px;
     overflow-y: auto;
@@ -566,46 +602,47 @@ body, html {
 
 #dpad {
     position: relative;
-    width: 120px;
-    height: 120px;
+    width: 160px;
+    height: 160px;
 }
 
 .dpad-btn {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    width: 54px;
+    height: 54px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.7);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 5px;
+    border-radius: 7px;
     font-weight: bold;
+    font-size: 20px;
 }
 
-#dpad-up { top: 0; left: 40px; }
-#dpad-left { top: 40px; left: 0; }
-#dpad-right { top: 40px; left: 80px; }
-#dpad-down { top: 80px; left: 40px; }
+#dpad-up { top: 0; left: 53px; }
+#dpad-left { top: 53px; left: 0; }
+#dpad-right { top: 53px; left: 106px; }
+#dpad-down { top: 106px; left: 53px; }
 
 #action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 18px;
     align-items: center;
 }
 
 .action-btn {
-    width: 55px;
-    height: 55px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.7);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
 }
 
@@ -759,25 +796,25 @@ body, html {
     }
 
     #dpad {
-        width: 100px;
-        height: 100px;
+        width: 140px;
+        height: 140px;
     }
 
     .dpad-btn {
-        width: 34px;
-        height: 34px;
-        font-size: 14px;
+        width: 46px;
+        height: 46px;
+        font-size: 18px;
     }
 
-    #dpad-up { left: 33px; }
-    #dpad-left { top: 33px; left: 0; }
-    #dpad-right { top: 33px; left: 66px; }
-    #dpad-down { top: 66px; left: 33px; }
+    #dpad-up { left: 47px; }
+    #dpad-left { top: 47px; left: 0; }
+    #dpad-right { top: 47px; left: 94px; }
+    #dpad-down { top: 94px; left: 47px; }
 
     .action-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 15px;
+        width: 62px;
+        height: 62px;
+        font-size: 19px;
     }
 }
 
@@ -825,5 +862,26 @@ body, html {
 
     #controls-hud {
         display: none;
+    }
+}
+
+/* ============================================================
+   iPhone専用: 強制横画面
+   iOSのSafariには画面回転ロックAPIが無いので、縦持ちのまま
+   ページ全体を90度回転させて見た目上「横画面」として表示する。
+   ============================================================ */
+html.is-iphone {
+    overflow: hidden;
+}
+
+@media screen and (orientation: portrait) {
+    html.is-iphone {
+        width: 100vh;
+        height: 100vw;
+        position: absolute;
+        top: 0;
+        left: 100%;
+        transform-origin: top left;
+        transform: rotate(90deg);
     }
 }
